@@ -13,7 +13,7 @@ void main() {
 }
 
 class NannakApp extends StatelessWidget {
-  const NannakApp({Key? key}) : super(key: key);
+  const NannakApp({super.key});
 
   @override
   Widget build(BuildContext context) {

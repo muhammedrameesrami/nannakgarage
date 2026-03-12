@@ -5,7 +5,7 @@ import '../../common/widgets/app_button.dart';
 import '../../common/widgets/app_textfield.dart';
 import '../../common/widgets/app_dropdown.dart';
 import '../../controllers/workflow_controller.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../main/main_screen.dart';
 
 class BillingScreen extends ConsumerWidget {
   const BillingScreen({Key? key}) : super(key: key);
@@ -35,7 +35,9 @@ class BillingScreen extends ConsumerWidget {
                   isPrimary: false,
                   onPressed: () => Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (context) => const DashboardScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const MainScreen(initialIndex: 0),
+                    ),
                     (route) => false,
                   ),
                 ),
@@ -52,7 +54,9 @@ class BillingScreen extends ConsumerWidget {
                     // Finalize and go to dashboard
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(builder: (context) => const DashboardScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const MainScreen(initialIndex: 0),
+                      ),
                       (route) => false,
                     );
                   },

@@ -4,7 +4,7 @@ import '../../core/theme/color_palette.dart';
 import '../../common/widgets/app_button.dart';
 import '../../common/widgets/app_textfield.dart';
 import '../../controllers/workflow_controller.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../main/main_screen.dart';
 
 class EstimationScreen extends ConsumerWidget {
   const EstimationScreen({Key? key}) : super(key: key);
@@ -34,7 +34,9 @@ class EstimationScreen extends ConsumerWidget {
                   isPrimary: false,
                   onPressed: () => Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (context) => const DashboardScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const MainScreen(initialIndex: 0),
+                    ),
                     (route) => false,
                   ),
                 ),

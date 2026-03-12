@@ -42,13 +42,11 @@ class WorkflowScreen extends ConsumerWidget {
       isWorkflowMode: true,
       child: Column(
         children: [
-          // Top Progress Bar Area
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
             color: Colors.white,
             child: StepProgressWidget(currentStep: state.currentStep),
           ),
-          // Scrollable Step Content Area
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(32.0),

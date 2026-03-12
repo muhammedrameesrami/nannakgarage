@@ -8,10 +8,10 @@ import '../../core/utils/responsive.dart';
 import '../../common/widgets/app_button.dart';
 import '../../common/widgets/app_textfield.dart';
 import '../../controllers/auth_controller.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../main/main_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -30,8 +30,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  
-
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
@@ -40,7 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       backgroundColor: ColorPalette.backgroundColor,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth > 900) {
+          if (constraints.maxWidth > 850) {
             /// Desktop/Wide Layout: Split Screen
             return Row(
               children: [
@@ -60,8 +58,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.black.withOpacity(0.3),
-                            Colors.black.withOpacity(0.5),
+                            Colors.black.withValues(alpha: 0.3),
+                            Colors.black.withValues(alpha: 0.5),
                           ],
                         ),
                       ),
@@ -136,7 +134,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withOpacity(0.4),
+                              Colors.black.withValues(alpha: 0.4),
                             ],
                           ),
                         ),
@@ -206,7 +204,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: ColorPalette.statusError.withOpacity(0.1),
+                color: ColorPalette.statusError.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -273,17 +271,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               isLoading: authState.isLoading,
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
-      final success = await ref
-          .read(authControllerProvider.notifier)
-          .login(_emailCtrl.text, _passCtrl.text);
-      if (success && mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const DashboardScreen()),
-          (route) => false,
-        ); 
-      }
-    }
+                  final success = await ref
+                      .read(authControllerProvider.notifier)
+                      .login(_emailCtrl.text, _passCtrl.text);
+                  if (success && mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MainScreen(initialIndex: 0),
+                      ),
+                      (route) => false,
+                    );
+                  }
+                }
               },
             ),
           ),

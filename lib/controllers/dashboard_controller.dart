@@ -1,45 +1,44 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/booking_model.dart';
-import '../models/customer_model.dart';
-import '../models/vehicle_model.dart';
 
 class DashboardState {
   final bool isLoading;
-  final double todayRevenue;
-  final int totalVehiclesToday;
-  final int completedServices;
-  final int pendingServices;
-  final List<BookingModel> recentBookings;
+  final Map<String, int> sectionCounts;
 
   const DashboardState({
     this.isLoading = false,
-    this.todayRevenue = 0,
-    this.totalVehiclesToday = 0,
-    this.completedServices = 0,
-    this.pendingServices = 0,
-    this.recentBookings = const [],
+    this.sectionCounts = const {},
   });
 
   DashboardState copyWith({
     bool? isLoading,
-    double? todayRevenue,
-    int? totalVehiclesToday,
-    int? completedServices,
-    int? pendingServices,
-    List<BookingModel>? recentBookings,
+    Map<String, int>? sectionCounts,
   }) {
     return DashboardState(
       isLoading: isLoading ?? this.isLoading,
-      todayRevenue: todayRevenue ?? this.todayRevenue,
-      totalVehiclesToday: totalVehiclesToday ?? this.totalVehiclesToday,
-      completedServices: completedServices ?? this.completedServices,
-      pendingServices: pendingServices ?? this.pendingServices,
-      recentBookings: recentBookings ?? this.recentBookings,
+      sectionCounts: sectionCounts ?? this.sectionCounts,
     );
   }
 }
 
 class DashboardController extends Notifier<DashboardState> {
+  static const String gateEntry = 'Gate Entry';
+  static const String estimation = 'Estimation';
+  static const String jobCard = 'Job Card';
+  static const String technician = 'Technician';
+  static const String qualityCheck = 'Quality Check';
+  static const String billing = 'Billing';
+  static const String gateExit = 'Gate Exit';
+
+  static const List<String> workflowSections = [
+    gateEntry,
+    estimation,
+    jobCard,
+    technician,
+    qualityCheck,
+    billing,
+    gateExit,
+  ];
+
   @override
   DashboardState build() {
     // Initialize with empty state and then load
@@ -54,40 +53,20 @@ class DashboardController extends Notifier<DashboardState> {
       // Simulate API Call
       await Future.delayed(const Duration(milliseconds: 800));
 
-      final mockBookings = [
-        BookingModel(
-          id: '1',
-          bookingNumber: 'BKG-001',
-          createdAt: DateTime.now(),
-          customer: CustomerModel(id: 'c1', name: 'John Doe', phone: '+1 987 654 3210'),
-          vehicle: VehicleModel(id: 'v1', number: 'KDB 654P', brand: 'Toyota', model: 'RAV4', kmDriven: '45,000'),
-          status: 'Quality Check',
-        ),
-        BookingModel(
-          id: '2',
-          bookingNumber: 'BKG-002',
-          createdAt: DateTime.now(),
-          customer: CustomerModel(id: 'c2', name: 'Jane Smith', phone: '+1 123 456 7890'),
-          vehicle: VehicleModel(id: 'v2', number: 'XMN 1234', brand: 'Honda', model: 'Civic', kmDriven: '32,000'),
-          status: 'Billing',
-        ),
-        BookingModel(
-          id: '3',
-          bookingNumber: 'BKG-003',
-          createdAt: DateTime.now(),
-          customer: CustomerModel(id: 'c3', name: 'Robert Brown', phone: '+1 555 666 7777'),
-          vehicle: VehicleModel(id: 'v3', number: 'LMH 8756', brand: 'Ford', model: 'F-150', kmDriven: '12,500'),
-          status: 'Estimation',
-        ),
-      ];
+      // Dummy data until backend integration is completed.
+      final counts = <String, int>{
+        gateEntry: 14,
+        estimation: 9,
+        jobCard: 11,
+        technician: 7,
+        qualityCheck: 5,
+        billing: 4,
+        gateExit: 3,
+      };
 
       state = DashboardState(
         isLoading: false,
-        todayRevenue: 4500.0,
-        totalVehiclesToday: 15,
-        completedServices: 8,
-        pendingServices: 7,
-        recentBookings: mockBookings,
+        sectionCounts: counts,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false);

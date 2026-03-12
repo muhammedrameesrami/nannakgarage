@@ -11,13 +11,17 @@ class AppLayout extends ConsumerWidget {
   final Widget child;
   final String currentRoute;
   final bool isWorkflowMode;
+  final int? activeMainIndex;
+  final ValueChanged<int>? onMainNavigationTap;
 
   const AppLayout({
-    Key? key,
+    super.key,
     required this.child,
     required this.currentRoute,
     this.isWorkflowMode = false,
-  }) : super(key: key);
+    this.activeMainIndex,
+    this.onMainNavigationTap,
+  });
 
   void _handleLogout(BuildContext context, WidgetRef ref) {
     Navigator.pushAndRemoveUntil(
@@ -29,10 +33,12 @@ class AppLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool isDesktop = MediaQuery.of(context).size.width > 1100;
+    final bool isDesktop = MediaQuery.of(context).size.width > 850;
 
     return Scaffold(
-      drawer: isDesktop ? null : Drawer(child: _buildSidebarContent(context, ref)),
+      drawer: isDesktop
+          ? null
+          : Drawer(child: _buildSidebarContent(context, ref)),
       body: Row(
         children: [
           // Desktop Sidebar
@@ -41,11 +47,15 @@ class AppLayout extends ConsumerWidget {
               width: 260,
               decoration: BoxDecoration(
                 color: ColorPalette.sidebarColor,
-                border: Border(right: BorderSide(color: ColorPalette.borderColor.withOpacity(0.5))),
+                border: Border(
+                  right: BorderSide(
+                    color: ColorPalette.borderColor.withValues(alpha: 0.5),
+                  ),
+                ),
               ),
               child: _buildSidebarContent(context, ref),
             ),
-          
+
           // Main Content Area
           Expanded(
             child: Column(
@@ -56,7 +66,9 @@ class AppLayout extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    border: Border(bottom: BorderSide(color: ColorPalette.borderColor)),
+                    border: Border(
+                      bottom: BorderSide(color: ColorPalette.borderColor),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -71,7 +83,10 @@ class AppLayout extends ConsumerWidget {
                       // Breadcrumbs or Title could go here
                       const Spacer(),
                       IconButton(
-                        icon: Icon(Icons.notifications_none, color: ColorPalette.textSecondary),
+                        icon: Icon(
+                          Icons.notifications_none,
+                          color: ColorPalette.textSecondary,
+                        ),
                         onPressed: () {},
                       ),
                       const SizedBox(width: 16),
@@ -92,11 +107,13 @@ class AppLayout extends ConsumerWidget {
                           backgroundColor: ColorPalette.statusError,
                           foregroundColor: Colors.white,
                           padding: EdgeInsets.symmetric(
-                            horizontal: isDesktop ? 16 : 12, 
-                            vertical: 12
+                            horizontal: isDesktop ? 16 : 12,
+                            vertical: 12,
                           ),
                           elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         onPressed: () => _handleLogout(context, ref),
                       ),
@@ -118,7 +135,11 @@ class AppLayout extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeaderAction({required IconData icon, String? label, required VoidCallback onPressed}) {
+  Widget _buildHeaderAction({
+    required IconData icon,
+    String? label,
+    required VoidCallback onPressed,
+  }) {
     return InkWell(
       onTap: onPressed,
       borderRadius: BorderRadius.circular(8),
@@ -153,10 +174,14 @@ class AppLayout extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: ColorPalette.primaryColor.withOpacity(0.1),
+                  color: ColorPalette.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.directions_car, color: ColorPalette.primaryColor, size: 32),
+                child: Icon(
+                  Icons.directions_car,
+                  color: ColorPalette.primaryColor,
+                  size: 32,
+                ),
               ),
               const SizedBox(height: 16),
               Text(
@@ -177,8 +202,8 @@ class AppLayout extends ConsumerWidget {
         Expanded(
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            children: isWorkflowMode 
-                ? _buildWorkflowNavigation(context, ref) 
+            children: isWorkflowMode
+                ? _buildWorkflowNavigation(context, ref)
                 : _buildMainNavigation(context, ref),
           ),
         ),
@@ -188,7 +213,7 @@ class AppLayout extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: ColorPalette.hoverColor.withOpacity(0.5),
+              color: ColorPalette.hoverColor.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -196,7 +221,11 @@ class AppLayout extends ConsumerWidget {
                 CircleAvatar(
                   backgroundColor: ColorPalette.primaryColor,
                   radius: 16,
-                  child: const Icon(Icons.person, size: 20, color: Colors.white),
+                  child: const Icon(
+                    Icons.person,
+                    size: 20,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
@@ -204,8 +233,17 @@ class AppLayout extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Admin User', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      Text('Workshop Admin', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      Text(
+                        'Admin User',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        'Workshop Admin',
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
                     ],
                   ),
                 ),
@@ -218,15 +256,28 @@ class AppLayout extends ConsumerWidget {
   }
 
   List<Widget> _buildMainNavigation(BuildContext context, WidgetRef ref) {
-    return AppConstants.mainNavigationItems.map((item) {
-      final isActive = currentRoute.startsWith(item['route']);
+    return AppConstants.mainNavigationItems.asMap().entries.map((entry) {
+      final index = entry.key;
+      final item = entry.value;
+      final isActive = activeMainIndex != null
+          ? activeMainIndex == index
+          : currentRoute.startsWith(item['route']);
       IconData iconData;
       switch (item['icon']) {
-        case 'dashboard': iconData = Icons.dashboard_rounded; break;
-        case 'bookings': iconData = Icons.receipt_long_rounded; break;
-        case 'reports': iconData = Icons.analytics_rounded; break;
-        case 'settings': iconData = Icons.settings_suggest_rounded; break;
-        default: iconData = Icons.circle_outlined;
+        case 'dashboard':
+          iconData = Icons.dashboard_rounded;
+          break;
+        case 'bookings':
+          iconData = Icons.receipt_long_rounded;
+          break;
+        case 'reports':
+          iconData = Icons.analytics_rounded;
+          break;
+        case 'settings':
+          iconData = Icons.settings_suggest_rounded;
+          break;
+        default:
+          iconData = Icons.circle_outlined;
       }
 
       return _buildNavItem(
@@ -234,6 +285,10 @@ class AppLayout extends ConsumerWidget {
         icon: iconData,
         isActive: isActive,
         onTap: () {
+          if (onMainNavigationTap != null) {
+            onMainNavigationTap!(index);
+            return;
+          }
           if (!isActive) {
             Widget target;
             if (item['route'] == AppConstants.routeDashboard) {
@@ -242,7 +297,10 @@ class AppLayout extends ConsumerWidget {
               target = const BookingsScreen();
             } else {
               // Handle other routes or show placeholder
-              target = Scaffold(appBar: AppBar(title: Text(item['title'])), body: Center(child: Text('${item['title']} Coming Soon')));
+              target = Scaffold(
+                appBar: AppBar(title: Text(item['title'])),
+                body: Center(child: Text('${item['title']} Coming Soon')),
+              );
             }
 
             Navigator.pushAndRemoveUntil(
@@ -258,10 +316,10 @@ class AppLayout extends ConsumerWidget {
 
   List<Widget> _buildWorkflowNavigation(BuildContext context, WidgetRef ref) {
     final workflowState = ref.watch(workflowControllerProvider);
-    
+
     return AppConstants.workflowSteps.map((step) {
       final isActive = workflowState.currentStep == step;
-      
+
       return _buildNavItem(
         title: step,
         icon: Icons.check_circle_rounded,
@@ -273,7 +331,12 @@ class AppLayout extends ConsumerWidget {
     }).toList();
   }
 
-  Widget _buildNavItem({required String title, required IconData icon, required bool isActive, required VoidCallback onTap}) {
+  Widget _buildNavItem({
+    required String title,
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: InkWell(
@@ -282,21 +345,27 @@ class AppLayout extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: isActive ? ColorPalette.primaryColor.withOpacity(0.1) : Colors.transparent,
+            color: isActive
+                ? ColorPalette.primaryColor.withValues(alpha: 0.1)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
               Icon(
                 icon,
-                color: isActive ? ColorPalette.primaryColor : ColorPalette.textSecondary,
+                color: isActive
+                    ? ColorPalette.primaryColor
+                    : ColorPalette.textSecondary,
                 size: 22,
               ),
               const SizedBox(width: 16),
               Text(
                 title,
                 style: TextStyle(
-                  color: isActive ? ColorPalette.primaryColor : ColorPalette.textSecondary,
+                  color: isActive
+                      ? ColorPalette.primaryColor
+                      : ColorPalette.textSecondary,
                   fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                   fontSize: 15,
                 ),

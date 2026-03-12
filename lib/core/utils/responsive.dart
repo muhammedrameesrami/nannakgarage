@@ -19,11 +19,11 @@ extension ResponsiveExtension on BuildContext {
   double sp(double px) {
     double scale = screenWidth / baseWidth;
     // For mobile, don't let it scale down linearly too much
-    if (screenWidth < 600) {
+    if (screenWidth < 850) {
       // On mobile (e.g. 360), scale would be 360/1440 = 0.25
       // 32px would become 8px. Too small.
       // We use a different scaling factor for mobile or clamp it.
-      return max(px * 0.7, px * scale * 1.5); 
+      return max(px * 0.7, px * scale * 1.5);
     }
     return px * scale;
   }
