@@ -7,8 +7,13 @@ import '../layout/app_layout.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
+  final String? initialBookingSection;
 
-  const MainScreen({super.key, this.initialIndex = 0});
+  const MainScreen({
+    super.key,
+    this.initialIndex = 0,
+    this.initialBookingSection,
+  });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -72,11 +77,11 @@ class _MainScreenState extends State<MainScreen>
       child: TabBarView(
         controller: _tabController,
         physics: const NeverScrollableScrollPhysics(),
-        children: const [
-          DashboardOverviewContent(),
-          BookingsContent(),
-          _ComingSoonPage(title: 'Reports'),
-          _ComingSoonPage(title: 'Settings'),
+        children: [
+          const DashboardOverviewContent(),
+          BookingsContent(initialSection: widget.initialBookingSection),
+          const _ComingSoonPage(title: 'Reports'),
+          const _ComingSoonPage(title: 'Settings'),
         ],
       ),
     );

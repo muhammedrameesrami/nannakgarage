@@ -4,13 +4,20 @@ import '../../core/constants/app_constants.dart';
 import '../../core/constants/asset_constants.dart';
 import '../../core/theme/color_palette.dart';
 import '../../core/utils/responsive.dart';
-import '../../common/widgets/app_button.dart';
 import '../../common/widgets/dashboard_card.dart';
 import '../../common/widgets/loading_widget.dart';
+import '../../common/widgets/status_badge.dart';
+import '../../controllers/booking_controller.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../controllers/workflow_controller.dart';
+import '../../models/booking_model.dart';
 import '../layout/app_layout.dart';
-import '../workflow/workflow_screen.dart';
+import '../billing/billing_screen.dart';
+import '../estimation/estimation_screen.dart';
+import '../gate_entry/gate_entry_screen.dart';
+import '../job_card/job_card_screen.dart';
+import '../quality/quality_check_screen.dart';
+import '../service/service_completion_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -24,111 +31,400 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-class DashboardOverviewContent extends ConsumerWidget {
+class DashboardOverviewContent extends ConsumerStatefulWidget {
   const DashboardOverviewContent({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dashboardControllerProvider);
+  ConsumerState<DashboardOverviewContent> createState() =>
+      _DashboardOverviewContentState();
+}
 
-    return state.isLoading
-        ? const LoadingWidget()
-        : SingleChildScrollView(
-            padding: EdgeInsets.all(
-              context.screenWidth < 768 ? 16 : context.w(32),
+class _DashboardOverviewContentState
+    extends ConsumerState<DashboardOverviewContent> {
+  String? _selectedSection;
+  bool _showSectionForm = false;
+
+  String _canonical(String value) => value.toLowerCase().replaceAll(' ', '');
+
+  bool _matchesSection(String bookingStatus, String section) {
+    final normalizedStatus = _canonical(bookingStatus);
+    final normalizedSection = _canonical(section);
+
+    if (normalizedSection == _canonical(DashboardController.technician)) {
+      return normalizedStatus == _canonical(AppConstants.statusService);
+    }
+    if (normalizedSection == _canonical(DashboardController.qualityCheck)) {
+      return normalizedStatus == _canonical(AppConstants.statusQualityCheck) ||
+          normalizedStatus == 'qualitycheck';
+    }
+    if (normalizedSection == _canonical(DashboardController.gateExit)) {
+      return normalizedStatus == _canonical(AppConstants.statusBilling);
+    }
+
+    return normalizedStatus == normalizedSection;
+  }
+
+  void _openSectionList(String section) {
+    setState(() {
+      _selectedSection = section;
+      _showSectionForm = false;
+    });
+  }
+
+  void _openOverview() {
+    setState(() {
+      _selectedSection = null;
+      _showSectionForm = false;
+    });
+  }
+
+  void _openSectionFormFromBooking(BookingModel booking) {
+    ref.read(workflowControllerProvider.notifier).openBooking(booking);
+    setState(() {
+      _showSectionForm = true;
+    });
+  }
+
+  void _startGateEntry() {
+    ref.read(workflowControllerProvider.notifier).startNewBooking();
+    setState(() {
+      _showSectionForm = true;
+    });
+  }
+
+  Widget _buildFormContent() {
+    final step = ref.watch(workflowControllerProvider).currentStep;
+
+    switch (step) {
+      case AppConstants.statusGateEntry:
+        return const GateEntryScreen();
+      case AppConstants.statusJobCard:
+        return const JobCardScreen();
+      case AppConstants.statusEstimation:
+        return const EstimationScreen();
+      case AppConstants.statusService:
+        return const ServiceCompletionScreen();
+      case AppConstants.statusQualityCheck:
+        return const QualityCheckScreen();
+      case AppConstants.statusBilling:
+        return const BillingScreen();
+      default:
+        return const Center(child: Text('Unknown Step'));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dashboardState = ref.watch(dashboardControllerProvider);
+    final bookingState = ref.watch(bookingControllerProvider);
+
+    final sectionBookings = _selectedSection == null
+        ? const <BookingModel>[]
+        : bookingState.bookings
+              .where(
+                (booking) => _matchesSection(booking.status, _selectedSection!),
+              )
+              .toList();
+
+    final showGateEntryFab =
+        _selectedSection == DashboardController.gateEntry && !_showSectionForm;
+
+    return Stack(
+      children: [
+        Padding(
+          padding: EdgeInsets.all(
+            context.screenWidth < 768 ? 16 : context.w(32),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_selectedSection == null)
+                _buildOverview(dashboardState)
+              else if (_showSectionForm)
+                _buildSectionFormView()
+              else
+                _buildSectionListView(
+                  section: _selectedSection!,
+                  bookingState: bookingState,
+                  bookings: sectionBookings,
+                ),
+            ],
+          ),
+        ),
+        if (showGateEntryFab)
+          Positioned(
+            right: context.w(24),
+            bottom: context.h(24),
+            child: FloatingActionButton.extended(
+              onPressed: _startGateEntry,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Vehicle'),
+              backgroundColor: ColorPalette.primaryColor,
+              foregroundColor: Colors.white,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Dashboard Overview',
-                      style: TextStyle(
-                        fontSize: context.csp(28, minSize: 24),
-                        fontWeight: FontWeight.bold,
-                        color: ColorPalette.textPrimary,
-                      ),
-                    ),
-                    AppButton(
-                      text: 'Add Booking',
-                      icon: Icons.add,
-                      onPressed: () {
-                        ref
-                            .read(workflowControllerProvider.notifier)
-                            .startNewBooking();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const WorkflowScreen(),
-                          ),
-                        );
-                      },
-                    ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildOverview(DashboardState dashboardState) {
+    if (dashboardState.isLoading) {
+      return const Expanded(child: LoadingWidget());
+    }
+
+    return Expanded(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Dashboard Overview',
+              style: TextStyle(
+                fontSize: context.csp(28, minSize: 24),
+                fontWeight: FontWeight.bold,
+                color: ColorPalette.textPrimary,
+              ),
+            ),
+            SizedBox(height: context.h(24)),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(
+                context.screenWidth < 768 ? 16 : context.w(20),
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    ColorPalette.primaryColor.withValues(alpha: 0.12),
+                    Colors.white,
                   ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                SizedBox(height: context.h(24)),
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(
-                    context.screenWidth < 768 ? 16 : context.w(20),
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        ColorPalette.primaryColor.withValues(alpha: 0.12),
-                        Colors.white,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: ColorPalette.borderColor.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final width = constraints.maxWidth;
-                      int columns = 1;
-                      if (width >= 1280) {
-                        columns = 4;
-                      } else if (width >= 900) {
-                        columns = 3;
-                      } else if (width >= 640) {
-                        columns = 2;
-                      }
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: ColorPalette.borderColor.withValues(alpha: 0.5),
+                ),
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  int columns = 1;
+                  if (width >= 1280) {
+                    columns = 4;
+                  } else if (width >= 900) {
+                    columns = 3;
+                  } else if (width >= 640) {
+                    columns = 2;
+                  }
 
-                      final horizontalGap = context.screenWidth < 768 ? 12.0 : 18.0;
-                      final verticalGap = context.screenWidth < 768 ? 12.0 : 18.0;
-                      final cardWidth =
-                          (width - ((columns - 1) * horizontalGap)) / columns;
+                  final horizontalGap = context.screenWidth < 768 ? 12.0 : 18.0;
+                  final verticalGap = context.screenWidth < 768 ? 12.0 : 18.0;
+                  final cardWidth =
+                      (width - ((columns - 1) * horizontalGap)) / columns;
 
-                      return Wrap(
-                        spacing: horizontalGap,
-                        runSpacing: verticalGap,
-                        children: DashboardController.workflowSections.map((
-                          section,
-                        ) {
-                          final visual = _sectionVisuals[section]!;
-                          return SizedBox(
-                            width: cardWidth,
-                            child: DashboardCard(
-                              title: section,
-                              value: '${state.sectionCounts[section] ?? 0}',
-                              imagePath: visual.imagePath,
-                              accentColor: visual.color,
-                            ),
-                          );
-                        }).toList(),
+                  return Wrap(
+                    spacing: horizontalGap,
+                    runSpacing: verticalGap,
+                    children: DashboardController.workflowSections.map((
+                      section,
+                    ) {
+                      final visual = _sectionVisuals[section]!;
+                      return SizedBox(
+                        width: cardWidth,
+                        child: DashboardCard(
+                          title: section,
+                          value:
+                              '${dashboardState.sectionCounts[section] ?? 0}',
+                          imagePath: visual.imagePath,
+                          accentColor: visual.color,
+                          onTap: () => _openSectionList(section),
+                        ),
                       );
-                    },
-                  ),
-                ),
-              ],
+                    }).toList(),
+                  );
+                },
+              ),
             ),
-          );
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionListView({
+    required String section,
+    required BookingState bookingState,
+    required List<BookingModel> bookings,
+  }) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: _openOverview,
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back to Overview',
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$section Vehicles',
+                style: TextStyle(
+                  fontSize: context.csp(28, minSize: 24),
+                  fontWeight: FontWeight.bold,
+                  color: ColorPalette.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: context.h(20)),
+          Expanded(
+            child: Card(
+              child: bookingState.isLoading
+                  ? const LoadingWidget()
+                  : Column(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: context.w(24),
+                            vertical: context.h(16),
+                          ),
+                          child: Row(
+                            children: [
+                              _headerText('Vehicle Number'),
+                              _headerText('Vehicle Name'),
+                              _headerText('Customer Name'),
+                              _headerText('Status'),
+                            ],
+                          ),
+                        ),
+                        const Divider(),
+                        Expanded(
+                          child: bookings.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    'No vehicles found in this section.',
+                                    style: TextStyle(
+                                      color: ColorPalette.textSecondary,
+                                      fontSize: context.sp(14),
+                                    ),
+                                  ),
+                                )
+                              : ListView.separated(
+                                  itemCount: bookings.length,
+                                  separatorBuilder: (context, index) =>
+                                      const Divider(),
+                                  itemBuilder: (context, index) {
+                                    final booking = bookings[index];
+                                    return InkWell(
+                                      onTap: () =>
+                                          _openSectionFormFromBooking(booking),
+                                      hoverColor: ColorPalette.hoverColor,
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: context.w(24),
+                                          vertical: context.h(16),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            _cellText(
+                                              booking.vehicle.number,
+                                              bold: true,
+                                            ),
+                                            _cellText(
+                                              booking.vehicle.displayName,
+                                            ),
+                                            _cellText(booking.customer.name),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: StatusBadge(
+                                                  status: booking.status,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionFormView() {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => setState(() => _showSectionForm = false),
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back to Vehicle List',
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _selectedSection ?? 'Section',
+                style: TextStyle(
+                  fontSize: context.csp(28, minSize: 24),
+                  fontWeight: FontWeight.bold,
+                  color: ColorPalette.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: context.h(20)),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: _buildFormContent(),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _headerText(String text) {
+    return Expanded(
+      flex: 2,
+      child: Text(
+        text,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          color: ColorPalette.textSecondary,
+          fontSize: context.sp(14),
+        ),
+      ),
+    );
+  }
+
+  Widget _cellText(String text, {bool bold = false}) {
+    return Expanded(
+      flex: 2,
+      child: Text(
+        text,
+        style: TextStyle(
+          fontWeight: bold ? FontWeight.w500 : FontWeight.w400,
+          fontSize: context.sp(14),
+        ),
+      ),
+    );
   }
 }
 

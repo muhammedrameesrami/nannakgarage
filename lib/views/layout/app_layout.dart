@@ -4,8 +4,7 @@ import '../../core/theme/color_palette.dart';
 import '../../core/constants/app_constants.dart';
 import '../../controllers/workflow_controller.dart';
 import '../auth/login_screen.dart';
-import '../dashboard/dashboard_screen.dart';
-import '../bookings/bookings_screen.dart';
+import '../main/main_screen.dart';
 
 class AppLayout extends ConsumerWidget {
   final Widget child;
@@ -289,23 +288,12 @@ class AppLayout extends ConsumerWidget {
             onMainNavigationTap!(index);
             return;
           }
-          if (!isActive) {
-            Widget target;
-            if (item['route'] == AppConstants.routeDashboard) {
-              target = const DashboardScreen();
-            } else if (item['route'] == AppConstants.routeBookings) {
-              target = const BookingsScreen();
-            } else {
-              // Handle other routes or show placeholder
-              target = Scaffold(
-                appBar: AppBar(title: Text(item['title'])),
-                body: Center(child: Text('${item['title']} Coming Soon')),
-              );
-            }
-
+          if (!isActive && activeMainIndex == null) {
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (context) => target),
+              MaterialPageRoute(
+                builder: (context) => MainScreen(initialIndex: index),
+              ),
               (route) => false,
             );
           }

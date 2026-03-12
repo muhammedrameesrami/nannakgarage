@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_constants.dart';
-import '../../common/widgets/step_progress_widget.dart';
 import '../../controllers/workflow_controller.dart';
 import '../layout/app_layout.dart';
 import '../gate_entry/gate_entry_screen.dart';
@@ -38,27 +37,15 @@ class WorkflowScreen extends ConsumerWidget {
     final state = ref.watch(workflowControllerProvider);
 
     return AppLayout(
-      currentRoute: AppConstants.routeWorkflow,
-      isWorkflowMode: true,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
-            color: Colors.white,
-            child: StepProgressWidget(currentStep: state.currentStep),
+      currentRoute: AppConstants.routeBookings,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32.0),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: _buildCurrentStepView(state.currentStep),
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(32.0),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: _buildCurrentStepView(state.currentStep),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
