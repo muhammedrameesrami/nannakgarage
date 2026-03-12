@@ -15,9 +15,11 @@ import '../layout/app_layout.dart';
 import '../billing/billing_screen.dart';
 import '../estimation/estimation_screen.dart';
 import '../gate_entry/gate_entry_screen.dart';
+import '../gate_exit/gate_exit_screen.dart';
 import '../job_card/job_card_screen.dart';
 import '../quality/quality_check_screen.dart';
 import '../service/service_completion_screen.dart';
+import '../workflow/completed_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -43,6 +45,13 @@ class _DashboardOverviewContentState
     extends ConsumerState<DashboardOverviewContent> {
   String? _selectedSection;
   bool _showSectionForm = false;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   String _canonical(String value) => value.toLowerCase().replaceAll(' ', '');
 
@@ -58,7 +67,7 @@ class _DashboardOverviewContentState
           normalizedStatus == 'qualitycheck';
     }
     if (normalizedSection == _canonical(DashboardController.gateExit)) {
-      return normalizedStatus == _canonical(AppConstants.statusBilling);
+      return normalizedStatus == _canonical(AppConstants.statusGateExit);
     }
 
     return normalizedStatus == normalizedSection;
@@ -108,6 +117,10 @@ class _DashboardOverviewContentState
         return const QualityCheckScreen();
       case AppConstants.statusBilling:
         return const BillingScreen();
+      case AppConstants.statusGateExit:
+        return const GateExitScreen();
+      case AppConstants.statusCompleted:
+        return const CompletedScreen();
       default:
         return const Center(child: Text('Unknown Step'));
     }
@@ -118,13 +131,21 @@ class _DashboardOverviewContentState
     final dashboardState = ref.watch(dashboardControllerProvider);
     final bookingState = ref.watch(bookingControllerProvider);
 
+    final query = _searchController.text.toLowerCase();
     final sectionBookings = _selectedSection == null
         ? const <BookingModel>[]
-        : bookingState.bookings
-              .where(
-                (booking) => _matchesSection(booking.status, _selectedSection!),
-              )
-              .toList();
+        : bookingState.bookings.where((booking) {
+            final matchesSection = _matchesSection(
+              booking.status,
+              _selectedSection!,
+            );
+            if (!matchesSection) return false;
+            if (query.isEmpty) return true;
+
+            return booking.vehicle.number.toLowerCase().contains(query) ||
+                booking.vehicle.displayName.toLowerCase().contains(query) ||
+                booking.customer.name.toLowerCase().contains(query);
+          }).toList();
 
     final showGateEntryFab =
         _selectedSection == DashboardController.gateEntry && !_showSectionForm;
@@ -268,12 +289,52 @@ class _DashboardOverviewContentState
                 tooltip: 'Back to Overview',
               ),
               const SizedBox(width: 8),
-              Text(
-                '$section Vehicles',
-                style: TextStyle(
-                  fontSize: context.csp(28, minSize: 24),
-                  fontWeight: FontWeight.bold,
-                  color: ColorPalette.textPrimary,
+              Expanded(
+                child: Text(
+                  '$section Vehicles',
+                  style: TextStyle(
+                    fontSize: context.csp(28, minSize: 24),
+                    fontWeight: FontWeight.bold,
+                    color: ColorPalette.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              SizedBox(
+                width: context.w(320),
+                height: 45,
+                child: TextFormField(
+                  controller: _searchController,
+                  onChanged: (value) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Search vehicles...',
+                    hintStyle: TextStyle(
+                      color: ColorPalette.textMuted,
+                      fontSize: context.sp(14),
+                    ),
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: ColorPalette.borderColor.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: ColorPalette.borderColor.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: ColorPalette.primaryColor,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -293,13 +354,14 @@ class _DashboardOverviewContentState
                           child: Row(
                             children: [
                               _headerText('Vehicle Number'),
-                              _headerText('Vehicle Name'),
+                              _headerText('Brand & Model'),
                               _headerText('Customer Name'),
                               _headerText('Status'),
+                              _headerText('Date'),
                             ],
                           ),
                         ),
-                        const Divider(),
+                        const Divider(color: ColorPalette.primaryColor),
                         Expanded(
                           child: bookings.isEmpty
                               ? Center(
@@ -344,6 +406,9 @@ class _DashboardOverviewContentState
                                                   status: booking.status,
                                                 ),
                                               ),
+                                            ),
+                                            _cellText(
+                                              booking.createdAt.toString(),
                                             ),
                                           ],
                                         ),

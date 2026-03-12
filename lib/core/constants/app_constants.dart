@@ -16,6 +16,8 @@ class AppConstants {
   static const String statusService = 'Service';
   static const String statusQualityCheck = 'Quality Check';
   static const String statusBilling = 'Billing';
+  static const String statusGateExit = 'Gate Exit';
+  static const String statusCompleted = 'Completed';
 
   // Navigation Items
   static const List<Map<String, dynamic>> mainNavigationItems = [
@@ -32,5 +34,7 @@ class AppConstants {
     'Service',
     'Quality',
     'Billing',
+    'Gate Exit',
+    'Completed',
   ];
 }

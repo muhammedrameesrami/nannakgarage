@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/constants/app_constants.dart';
 import '../models/booking_model.dart';
 import '../models/customer_model.dart';
 import '../models/vehicle_model.dart';
@@ -45,16 +46,44 @@ class BookingController extends Notifier<BookingState> {
       // Simulate API Call
       await Future.delayed(const Duration(milliseconds: 600));
 
-      final List<BookingModel> mockList = List.generate(10, (index) {
-        final id = (page - 1) * 10 + index + 1;
-        final statuses = ['Gate Entry', 'Job Card', 'Estimation', 'Service', 'Quality Check', 'Billing'];
+      final List<BookingModel> mockList = List.generate(20, (index) {
+        final id = (page - 1) * 20 + index + 1;
+        final statuses = [
+          AppConstants.statusGateEntry,
+          AppConstants.statusJobCard,
+          AppConstants.statusEstimation,
+          AppConstants.statusService,
+          AppConstants.statusQualityCheck,
+          AppConstants.statusBilling,
+          AppConstants.statusGateExit,
+          AppConstants.statusCompleted,
+        ];
+        
+        // Ensure variety and specifically include Gate Exit items
+        String status;
+        if (index % 5 == 0) {
+          status = AppConstants.statusGateExit;
+        } else {
+          status = statuses[index % statuses.length];
+        }
+
         return BookingModel(
           id: id.toString(),
           bookingNumber: 'BKG-${id.toString().padLeft(3, '0')}',
           createdAt: DateTime.now().subtract(Duration(hours: id)),
-          customer: CustomerModel(id: 'c$id', name: 'Customer $id', phone: '+1 234 567 89$index'),
-          vehicle: VehicleModel(id: 'v$id', number: 'XYZ ${id}00', brand: 'Toyota', model: 'Model $index', kmDriven: '${id * 1000}'),
-          status: statuses[index % statuses.length],
+          customer: CustomerModel(
+            id: 'c$id',
+            name: 'Customer $id',
+            phone: '+1 234 567 89$index',
+          ),
+          vehicle: VehicleModel(
+            id: 'v$id',
+            number: 'XYZ ${id}00',
+            brand: 'Toyota',
+            model: 'Model $index',
+            kmDriven: '${id * 1000}',
+          ),
+          status: status,
         );
       });
 
