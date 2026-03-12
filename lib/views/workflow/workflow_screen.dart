@@ -38,7 +38,7 @@ class WorkflowScreen extends ConsumerWidget {
     final state = ref.watch(workflowControllerProvider);
 
     return AppLayout(
-      currentRoute: '/workflow/${state.currentStep.toLowerCase().replaceAll(' ', '-')}',
+      currentRoute: AppConstants.routeWorkflow,
       isWorkflowMode: true,
       child: Column(
         children: [

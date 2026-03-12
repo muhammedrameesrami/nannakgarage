@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
-import 'routes/app_routes.dart';
+import 'views/auth/login_screen.dart';
 
 void main() {
   runApp(
@@ -17,11 +17,11 @@ class NannakApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
+    return MaterialApp(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      routerConfig: AppRouter.router,
+      home: const LoginScreen(),
     );
   }
 }

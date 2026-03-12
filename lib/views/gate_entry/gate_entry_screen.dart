@@ -5,8 +5,7 @@ import '../../common/widgets/app_button.dart';
 import '../../common/widgets/app_textfield.dart';
 import '../../common/widgets/app_dropdown.dart';
 import '../../controllers/workflow_controller.dart';
-import 'package:go_router/go_router.dart';
-import '../../core/constants/app_constants.dart';
+import '../dashboard/dashboard_screen.dart';
 
 class GateEntryScreen extends ConsumerStatefulWidget {
   const GateEntryScreen({Key? key}) : super(key: key);
@@ -40,7 +39,11 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
                   text: 'Cancel',
                   isPrimary: false,
                   onPressed: () {
-                    context.go(AppConstants.routeDashboard);
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const DashboardScreen()),
+                      (route) => false,
+                    );
                   },
                 ),
                 const SizedBox(width: 16),

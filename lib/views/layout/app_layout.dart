@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/theme/color_palette.dart';
 import '../../core/constants/app_constants.dart';
 import '../../controllers/workflow_controller.dart';
+import '../auth/login_screen.dart';
+import '../dashboard/dashboard_screen.dart';
+import '../bookings/bookings_screen.dart';
 
 class AppLayout extends ConsumerWidget {
   final Widget child;
@@ -18,7 +20,11 @@ class AppLayout extends ConsumerWidget {
   }) : super(key: key);
 
   void _handleLogout(BuildContext context, WidgetRef ref) {
-    context.go(AppConstants.routeLogin);
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
   }
 
   @override
@@ -69,11 +75,13 @@ class AppLayout extends ConsumerWidget {
                         onPressed: () {},
                       ),
                       const SizedBox(width: 16),
-                      // Profile/Settings
+                      // Profile/Settings - Just for demonstration, use a placeholder or simple screen
                       _buildHeaderAction(
                         icon: Icons.settings_outlined,
                         label: isDesktop ? 'Settings' : null,
-                        onPressed: () => context.go(AppConstants.routeSettings),
+                        onPressed: () {
+                          // For now, just stay or show a simple scaffold if requested
+                        },
                       ),
                       const SizedBox(width: 16),
                       // Logout
@@ -227,7 +235,21 @@ class AppLayout extends ConsumerWidget {
         isActive: isActive,
         onTap: () {
           if (!isActive) {
-            context.go(item['route']);
+            Widget target;
+            if (item['route'] == AppConstants.routeDashboard) {
+              target = const DashboardScreen();
+            } else if (item['route'] == AppConstants.routeBookings) {
+              target = const BookingsScreen();
+            } else {
+              // Handle other routes or show placeholder
+              target = Scaffold(appBar: AppBar(title: Text(item['title'])), body: Center(child: Text('${item['title']} Coming Soon')));
+            }
+
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => target),
+              (route) => false,
+            );
           }
         },
       );

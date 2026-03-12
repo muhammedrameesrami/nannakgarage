@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/asset_constants.dart';
 import '../../core/theme/color_palette.dart';
@@ -12,6 +11,8 @@ import '../../common/widgets/loading_widget.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../controllers/workflow_controller.dart';
 import '../layout/app_layout.dart';
+import '../workflow/workflow_screen.dart';
+import '../bookings/bookings_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -45,7 +46,10 @@ class DashboardScreen extends ConsumerWidget {
                         icon: Icons.add,
                         onPressed: () {
                           ref.read(workflowControllerProvider.notifier).startNewBooking();
-                          context.go(AppConstants.routeWorkflow);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const WorkflowScreen()),
+                          );
                         },
                       ),
                     ],
@@ -101,7 +105,10 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                       ),
                       TextButton(
-                        onPressed: () => context.go(AppConstants.routeBookings),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const BookingsScreen()),
+                        ),
                         child: const Text('View All Bookings'),
                       ),
                     ],
@@ -143,20 +150,29 @@ class DashboardScreen extends ConsumerWidget {
                             return InkWell(
                               onTap: () {
                                 ref.read(workflowControllerProvider.notifier).openBooking(booking);
-                                context.go(AppConstants.routeWorkflow);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const WorkflowScreen()),
+                                );
                               },
                               hoverColor: ColorPalette.hoverColor,
                               child: Padding(
                                 padding: EdgeInsets.symmetric(
                                   horizontal: context.w(24),
-                                  vertical: context.h(18),
+                                  vertical: context.h(16),
                                 ),
                                 child: Row(
                                   children: [
-                                    Expanded(flex: 2, child: Text(booking.vehicle.number, style: const TextStyle(fontWeight: FontWeight.bold, color: ColorPalette.primaryColor))),
-                                    Expanded(flex: 2, child: Text(booking.vehicle.displayName, style: const TextStyle(fontWeight: FontWeight.w500))),
-                                    Expanded(flex: 2, child: Text(booking.customer.name)),
-                                    Expanded(flex: 2, child: Align(alignment: Alignment.centerLeft, child: StatusBadge(status: booking.status))),
+                                    Expanded(flex: 2, child: Text(booking.vehicle.number, style: TextStyle(fontSize: context.sp(14), fontWeight: FontWeight.w500))),
+                                    Expanded(flex: 2, child: Text(booking.vehicle.displayName, style: TextStyle(fontSize: context.sp(14)))),
+                                    Expanded(flex: 2, child: Text(booking.customer.name, style: TextStyle(fontSize: context.sp(14)))),
+                                    Expanded(
+                                      flex: 2,
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: StatusBadge(status: booking.status),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),

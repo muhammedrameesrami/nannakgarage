@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/asset_constants.dart';
 import '../../core/theme/color_palette.dart';
@@ -9,6 +8,7 @@ import '../../core/utils/responsive.dart';
 import '../../common/widgets/app_button.dart';
 import '../../common/widgets/app_textfield.dart';
 import '../../controllers/auth_controller.dart';
+import '../dashboard/dashboard_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -30,16 +30,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  void _login() async {
-    if (_formKey.currentState!.validate()) {
-      final success = await ref
-          .read(authControllerProvider.notifier)
-          .login(_emailCtrl.text, _passCtrl.text);
-      if (success && mounted) {
-        context.go(AppConstants.routeDashboard);
-      }
-    }
-  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -280,7 +271,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: AppButton(
               text: 'Login',
               isLoading: authState.isLoading,
-              onPressed: _login,
+              onPressed: () async {
+                if (_formKey.currentState!.validate()) {
+      final success = await ref
+          .read(authControllerProvider.notifier)
+          .login(_emailCtrl.text, _passCtrl.text);
+      if (success && mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          (route) => false,
+        );
+      }
+    }
+              },
             ),
           ),
           SizedBox(height: context.h(24)),

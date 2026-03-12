@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/color_palette.dart';
 import '../../core/utils/responsive.dart';
@@ -70,7 +69,7 @@ class BookingsScreen extends ConsumerWidget {
                       icon: Icons.add,
                       onPressed: () {
                         ref.read(workflowControllerProvider.notifier).startNewBooking();
-                        context.go(AppConstants.routeWorkflow);
+                        Navigator.pushNamed(context, AppConstants.routeWorkflow);
                       },
                     ),
                   ],
@@ -108,7 +107,7 @@ class BookingsScreen extends ConsumerWidget {
                                 return InkWell(
                                   onTap: () {
                                     ref.read(workflowControllerProvider.notifier).openBooking(booking);
-                                    context.go(AppConstants.routeWorkflow);
+                                    Navigator.pushNamed(context, AppConstants.routeWorkflow);
                                   },
                                   hoverColor: ColorPalette.hoverColor,
                                   child: Padding(
