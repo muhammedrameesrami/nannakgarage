@@ -1,19 +1,33 @@
+import 'customer_model.dart';
+import 'vehicle_model.dart';
+import 'estimation_model.dart';
+
 class BillingModel {
-  final String id;
-  final String jobId;
-  final double totalAmount;
+  final String bookingId;
+  final CustomerModel customer;
+  final VehicleModel vehicle;
+  final List<ServiceItem> services;
+  final List<SparePart> spareParts;
+  final double labourCharges;
   final double discount;
-  final double finalAmount;
-  final String paymentMethod;
-  final String narration;
+  final String paymentMethod; // e.g., Cash, Card, UPI
 
   BillingModel({
-    required this.id,
-    required this.jobId,
-    required this.totalAmount,
+    required this.bookingId,
+    required this.customer,
+    required this.vehicle,
+    required this.services,
+    required this.spareParts,
+    required this.labourCharges,
     this.discount = 0.0,
-    required this.finalAmount,
     required this.paymentMethod,
-    this.narration = '',
   });
+
+  double get subTotal {
+    double servicesCost = services.fold(0, (sum, item) => sum + item.cost);
+    double partsCost = spareParts.fold(0, (sum, item) => sum + item.price * item.quantity);
+    return servicesCost + partsCost + labourCharges;
+  }
+
+  double get finalAmount => subTotal - discount;
 }

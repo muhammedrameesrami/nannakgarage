@@ -1,0 +1,67 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/constants/app_constants.dart';
+import '../../common/widgets/step_progress_widget.dart';
+import '../../controllers/workflow_controller.dart';
+import '../layout/app_layout.dart';
+import '../gate_entry/gate_entry_screen.dart';
+import '../job_card/job_card_screen.dart';
+import '../estimation/estimation_screen.dart';
+import '../service/service_completion_screen.dart';
+import '../quality/quality_check_screen.dart';
+import '../billing/billing_screen.dart';
+
+class WorkflowScreen extends ConsumerWidget {
+  const WorkflowScreen({Key? key}) : super(key: key);
+
+  Widget _buildCurrentStepView(String currentStep) {
+    switch (currentStep) {
+      case AppConstants.statusGateEntry:
+        return const GateEntryScreen();
+      case AppConstants.statusJobCard:
+        return const JobCardScreen();
+      case AppConstants.statusEstimation:
+        return const EstimationScreen();
+      case AppConstants.statusService:
+        return const ServiceCompletionScreen();
+      case AppConstants.statusQualityCheck:
+        return const QualityCheckScreen();
+      case AppConstants.statusBilling:
+        return const BillingScreen();
+      default:
+        return const Center(child: Text('Unknown Step'));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(workflowControllerProvider);
+
+    return AppLayout(
+      currentRoute: '/workflow/${state.currentStep.toLowerCase().replaceAll(' ', '-')}',
+      isWorkflowMode: true,
+      child: Column(
+        children: [
+          // Top Progress Bar Area
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+            color: Colors.white,
+            child: StepProgressWidget(currentStep: state.currentStep),
+          ),
+          // Scrollable Step Content Area
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32.0),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: _buildCurrentStepView(state.currentStep),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

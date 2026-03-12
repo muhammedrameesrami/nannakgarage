@@ -1,217 +1,117 @@
 import 'package:flutter/material.dart';
-import '../../common/widgets/common_textfield.dart';
-import '../../common/widgets/common_button.dart';
-import '../../common/widgets/common_dropdown.dart';
-import '../../common/widgets/image_upload_widget.dart';
-import '../../common/widgets/video_upload_widget.dart';
-import '../../common/widgets/service_check_item.dart';
-import '../../common/widgets/technician_dropdown.dart';
-import '../estimation/estimation_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/color_palette.dart';
+import '../../common/widgets/app_button.dart';
+import '../../common/widgets/app_textfield.dart';
+import '../../common/widgets/app_dropdown.dart';
+import '../../controllers/workflow_controller.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/constants/app_constants.dart';
 
-class JobCardScreen extends StatefulWidget {
-  const JobCardScreen({super.key});
-
-  @override
-  State<JobCardScreen> createState() => _JobCardScreenState();
-}
-
-class _JobCardScreenState extends State<JobCardScreen> {
-  final _formKey = GlobalKey<FormState>();
-  String? _selectedTech;
-  final TextEditingController _dateController = TextEditingController();
-
-  Map<String, bool> checklist = {
-    'Engine Oil': false,
-    'Brake Fluid': false,
-    'Coolant Level': false,
-    'Battery Health': false,
-  };
-
-  void _selectDate(BuildContext context) async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null) {
-      setState(() {
-        _dateController.text = "${picked.toLocal()}".split(' ')[0];
-      });
-    }
-  }
+class JobCardScreen extends ConsumerWidget {
+  const JobCardScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Job Card')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Vehicle Details',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: ColorPalette.primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const CommonTextField(label: 'Vehicle Brand'),
-                  const CommonTextField(label: 'Vehicle Model'),
-                  GestureDetector(
-                    onTap: () => _selectDate(context),
-                    child: AbsorbPointer(
-                      child: CommonTextField(
-                        controller: _dateController,
-                        label: 'Registration Date',
-                      ),
-                    ),
-                  ),
-                  const CommonTextField(label: 'Engine Number'),
-                  const CommonTextField(label: 'Chassis Number'),
-                  const CommonTextField(label: 'Fitness'),
-                  CommonDropdown<String>(
-                    label: 'Vehicle Class',
-                    value: null,
-                    items: const [
-                      DropdownMenuItem(value: 'LMV', child: Text('LMV')),
-                      DropdownMenuItem(value: 'MCWG', child: Text('MCWG')),
-                    ],
-                    onChanged: (val) {},
-                  ),
-                  CommonDropdown<String>(
-                    label: 'Fuel Type',
-                    value: null,
-                    items: const [
-                      DropdownMenuItem(value: 'Petrol', child: Text('Petrol')),
-                      DropdownMenuItem(value: 'Diesel', child: Text('Diesel')),
-                      DropdownMenuItem(value: 'EV', child: Text('EV')),
-                    ],
-                    onChanged: (val) {},
-                  ),
-                  const CommonTextField(
-                    label: 'Insurance Expiry Date',
-                    hint: 'YYYY-MM-DD',
-                  ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(workflowControllerProvider.notifier);
 
-                  const SizedBox(height: 32),
-                  const Text(
-                    'Uploads',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: ColorPalette.primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ImageUploadWidget(
-                          label: 'Front View',
-                          onImageSelected: (_) {},
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ImageUploadWidget(
-                          label: 'Back View',
-                          onImageSelected: (_) {},
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ImageUploadWidget(
-                          label: 'Left View',
-                          onImageSelected: (_) {},
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ImageUploadWidget(
-                          label: 'Right View',
-                          onImageSelected: (_) {},
-                        ),
-                      ),
-                    ],
-                  ),
-                  VideoUploadWidget(
-                    label: 'Vehicle Video Capture',
-                    onVideoSelected: (_) {},
-                  ),
-                  VideoUploadWidget(
-                    label: 'Damage Video Capture',
-                    onVideoSelected: (_) {},
-                  ),
-
-                  const SizedBox(height: 32),
-                  const Text(
-                    'Inspection Checklist',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: ColorPalette.primaryColor,
-                    ),
-                  ),
-                  ...checklist.keys.map((key) {
-                    return ServiceCheckItem(
-                      title: key,
-                      isChecked: checklist[key]!,
-                      onChanged: (val) {
-                        setState(() {
-                          checklist[key] = val ?? false;
-                        });
-                      },
-                    );
-                  }),
-
-                  const SizedBox(height: 32),
-                  const CommonTextField(
-                    label: 'Customer Service Request',
-                    maxLines: 3,
-                  ),
-                  const CommonTextField(label: 'Advisor Request', maxLines: 3),
-
-                  const SizedBox(height: 24),
-                  TechnicianDropdown(
-                    selectedTechnician: _selectedTech,
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedTech = val;
-                      });
-                    },
-                  ),
-
-                  const SizedBox(height: 32),
-                  CommonButton(
-                    text: 'Save & Next Calculation',
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const EstimationScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Job Card',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: ColorPalette.textPrimary,
               ),
             ),
-          ),
+            Row(
+              children: [
+                AppButton(
+                  text: 'Cancel',
+                  isPrimary: false,
+                  onPressed: () => context.go(AppConstants.routeDashboard),
+                ),
+                const SizedBox(width: 16),
+                AppButton(
+                  text: 'Previous',
+                  isPrimary: false,
+                  onPressed: () => notifier.previousStep(),
+                ),
+                const SizedBox(width: 16),
+                AppButton(
+                  text: 'Save',
+                  onPressed: () {}, 
+                ),
+                const SizedBox(width: 16),
+                AppButton(
+                  text: 'Next',
+                  icon: Icons.chevron_right,
+                  onPressed: () => notifier.nextStep(),
+                ),
+              ],
+            ),
+          ],
         ),
-      ),
+        const SizedBox(height: 32),
+        Row(
+          children: [
+            Expanded(
+              child: AppDropdown<String>(
+                label: 'Technician Assignment',
+                hint: 'Select Technician',
+                items: const [],
+              ),
+            ),
+            const SizedBox(width: 24),
+            const Expanded(child: SizedBox()),
+          ],
+        ),
+        const SizedBox(height: 32),
+        const AppTextField(
+          label: 'Customer Complaints',
+          hint: 'Enter customer issues',
+          maxLines: 4,
+        ),
+        const SizedBox(height: 24),
+        const AppTextField(
+          label: 'Advisor Notes',
+          hint: 'Enter advisor notes',
+          maxLines: 4,
+        ),
+        const SizedBox(height: 32),
+        Text('Inspection Checklist', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 24,
+          runSpacing: 16,
+          children: [
+            _buildChecklistItem('Brakes'),
+            _buildChecklistItem('Engine'),
+            _buildChecklistItem('Lights'),
+            _buildChecklistItem('Battery'),
+            _buildChecklistItem('Suspension'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChecklistItem(String title) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Checkbox(
+          value: false,
+          onChanged: (val) {},
+          activeColor: ColorPalette.primaryColor,
+        ),
+        Text(title),
+      ],
     );
   }
 }

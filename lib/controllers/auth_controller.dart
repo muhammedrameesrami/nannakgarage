@@ -1,36 +1,48 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// Auth State
 class AuthState {
   final bool isLoading;
-  final String? error;
   final bool isAuthenticated;
+  final String? error;
 
-  AuthState({this.isLoading = false, this.error, this.isAuthenticated = false});
+  const AuthState({
+    this.isLoading = false,
+    this.isAuthenticated = false,
+    this.error,
+  });
+
+  AuthState copyWith({bool? isLoading, bool? isAuthenticated, String? error}) {
+    return AuthState(
+      isLoading: isLoading ?? this.isLoading,
+      isAuthenticated: isAuthenticated ?? this.isAuthenticated,
+      error: error,
+    );
+  }
 }
 
 class AuthController extends Notifier<AuthState> {
   @override
-  AuthState build() {
-    return AuthState();
-  }
+  AuthState build() => const AuthState();
 
   Future<bool> login(String email, String password) async {
-    state = AuthState(isLoading: true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (email.isNotEmpty && password.length >= 6) {
-      state = AuthState(isLoading: false, isAuthenticated: true);
+    state = state.copyWith(isLoading: true);
+
+    // Simulate network delay
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (email == 'admin@nannak.com' && password == 'password') {
+      state = state.copyWith(isLoading: false, isAuthenticated: true);
       return true;
     } else {
-      state = AuthState(isLoading: false, error: 'Invalid email or password');
+      state = state.copyWith(isLoading: false, error: 'Invalid credentials. Use admin@nannak.com / password');
       return false;
     }
   }
 
   void logout() {
-    state = AuthState();
+    state = const AuthState(isAuthenticated: false);
   }
 }
 
-final authControllerProvider = NotifierProvider<AuthController, AuthState>(() {
-  return AuthController();
-});
+final authControllerProvider = NotifierProvider<AuthController, AuthState>(AuthController.new);

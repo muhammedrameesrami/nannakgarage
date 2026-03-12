@@ -1,13 +1,17 @@
 class JobCardModel {
-  final String jobId;
-  final String vehicleBrand;
-  final String vehicleModel;
-  final String assignedTechnician;
+  final String bookingId;
+  final String technicianAssignment;
+  final String customerComplaints;
+  final String advisorNotes;
+  final List<String> inspectionChecklist; // e.g., ["Brakes", "Engine", "Lights"]
+  final List<String>? vehicleImages; 
 
   JobCardModel({
-    required this.jobId,
-    required this.vehicleBrand,
-    required this.vehicleModel,
-    required this.assignedTechnician,
+    required this.bookingId,
+    required this.technicianAssignment,
+    required this.customerComplaints,
+    required this.advisorNotes,
+    required this.inspectionChecklist,
+    this.vehicleImages,
   });
 }

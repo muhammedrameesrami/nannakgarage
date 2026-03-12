@@ -1,202 +1,169 @@
 import 'package:flutter/material.dart';
-import '../../common/widgets/common_textfield.dart';
-import '../../common/widgets/common_button.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/theme/color_palette.dart';
+import '../../common/widgets/app_button.dart';
+import '../../common/widgets/app_textfield.dart';
+import '../../common/widgets/app_dropdown.dart';
+import '../../controllers/workflow_controller.dart';
 
-class BillingScreen extends StatefulWidget {
-  const BillingScreen({super.key});
-
-  @override
-  State<BillingScreen> createState() => _BillingScreenState();
-}
-
-class _BillingScreenState extends State<BillingScreen> {
-  String _paymentMethod = 'Cash';
-  final double _totalAmount = 150.0;
-  double _discount = 0.0;
-  final TextEditingController _discountController = TextEditingController();
+class BillingScreen extends ConsumerWidget {
+  const BillingScreen({Key? key}) : super(key: key);
 
   @override
-  void initState() {
-    super.initState();
-    _discountController.addListener(() {
-      setState(() {
-        _discount = double.tryParse(_discountController.text) ?? 0.0;
-      });
-    });
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(workflowControllerProvider.notifier);
 
-  @override
-  Widget build(BuildContext context) {
-    double finalAmount = _totalAmount - _discount;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Billing & Invoice')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Billing Summary',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: ColorPalette.textPrimary,
+              ),
+            ),
+            Row(
               children: [
-                _buildSummaryCard(finalAmount),
-                const SizedBox(height: 32),
-                const Text(
-                  'Payment Details',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: ColorPalette.primaryColor,
-                  ),
+                AppButton(
+                  text: 'Cancel',
+                  isPrimary: false,
+                  onPressed: () => context.go(AppConstants.routeDashboard),
                 ),
-                const SizedBox(height: 16),
-                CommonTextField(
-                  controller: _discountController,
-                  label: 'Discount Amount',
-                  keyboardType: TextInputType.number,
+                const SizedBox(width: 16),
+                AppButton(
+                  text: 'Previous',
+                  isPrimary: false,
+                  onPressed: () => notifier.previousStep(),
                 ),
-                const CommonTextField(label: 'Narration', maxLines: 2),
-
-                const SizedBox(height: 24),
-                const Text(
-                  'Payment Method',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Wrap(
-                  spacing: 16,
-                  children: ['Cash', 'Card', 'UPI', 'Online'].map((method) {
-                    return ChoiceChip(
-                      label: Text(method),
-                      selected: _paymentMethod == method,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _paymentMethod = method;
-                          });
-                        }
-                      },
-                    );
-                  }).toList(),
-                ),
-
-                const SizedBox(height: 32),
-                CommonButton(
-                  text: 'Generate Invoice & Finish',
+                const SizedBox(width: 16),
+                AppButton(
+                  text: 'Generate Invoice',
                   onPressed: () {
-                    _showSuccessDialog();
+                    // Finalize and go to dashboard
+                    context.go(AppConstants.routeDashboard);
                   },
                 ),
               ],
             ),
-          ),
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSummaryCard(double finalAmount) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
+        const SizedBox(height: 32),
+        Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Job Summary',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Customer Summary', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const SizedBox(height: 16),
+                  _buildSummaryItem('Name', 'John Doe'),
+                  _buildSummaryItem('Phone', '+1 987 654 3210'),
+                  _buildSummaryItem('Vehicle', 'Toyota RAV4 - KDB 654P'),
+                  const SizedBox(height: 32),
+                  const Text('Service & Parts Summary', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const SizedBox(height: 16),
+                  _buildCostItem('General Service', '\$150.00'),
+                  _buildCostItem('Oil Change', '\$45.00'),
+                  _buildCostItem('Brake Pads (x2)', '\$120.00'),
+                  _buildCostItem('Air Filter (x1)', '\$25.00'),
+                  const Divider(),
+                  _buildCostItem('Labour Charges', '\$50.00'),
+                ],
+              ),
             ),
-            const Divider(),
-            _buildSummaryRow('Customer', 'John Doe'),
-            _buildSummaryRow('Vehicle', 'Toyota Camry (ABC-1234)'),
-            _buildSummaryRow(
-              'Services completed',
-              'Oil Change, Wheel Alignment',
-            ),
-            _buildSummaryRow(
-              'Quality Check',
-              'PASS',
-              valueColor: ColorPalette.successColor,
-            ),
-            const Divider(),
-            _buildSummaryRow(
-              'Total Labor & Parts',
-              '\$${_totalAmount.toStringAsFixed(2)}',
-            ),
-            _buildSummaryRow(
-              'Discount',
-              '-\$${_discount.toStringAsFixed(2)}',
-              valueColor: ColorPalette.errorColor,
-            ),
-            const Divider(),
-            _buildSummaryRow(
-              'Grand Total',
-              '\$${finalAmount.toStringAsFixed(2)}',
-              isBold: true,
+            const SizedBox(width: 48),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: ColorPalette.backgroundColor,
+                  border: Border.all(color: ColorPalette.borderColor),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Payment Details', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
+                    const SizedBox(height: 24),
+                    _buildTotalRow('Subtotal', '\$390.00'),
+                    const SizedBox(height: 16),
+                    const AppTextField(
+                      label: 'Discount',
+                      hint: '\$0.00',
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text('Total Amount', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                        Text('\$390.00', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: ColorPalette.primaryColor)),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    AppDropdown<String>(
+                      label: 'Payment Method',
+                      hint: 'Card',
+                      items: const [
+                        DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                        DropdownMenuItem(value: 'Card', child: Text('Card')),
+                        DropdownMenuItem(value: 'UPI', child: Text('UPI')),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(label, style: const TextStyle(color: ColorPalette.textSecondary)),
+          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+        ],
       ),
     );
   }
 
-  Widget _buildSummaryRow(
-    String label,
-    String value, {
-    Color? valueColor,
-    bool isBold = false,
-  }) {
+  Widget _buildCostItem(String item, String cost) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(color: ColorPalette.textSecondary),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              color: valueColor ?? ColorPalette.textPrimary,
-              fontSize: isBold ? 18 : 14,
-            ),
-          ),
+          Text(item),
+          Text(cost, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Success'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.check_circle,
-              color: ColorPalette.successColor,
-              size: 64,
-            ),
-            SizedBox(height: 16),
-            Text('Invoice generated successfully! Job card closed.'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            child: const Text('Back to Home'),
-          ),
-        ],
-      ),
+  Widget _buildTotalRow(String label, String amount) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: ColorPalette.textSecondary, fontSize: 16)),
+        Text(amount, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+      ],
     );
   }
 }
