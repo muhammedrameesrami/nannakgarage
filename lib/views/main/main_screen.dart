@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/color_palette.dart';
+import '../../models/booking_model.dart';
+import '../bookings/booking_detail_screen.dart';
 import '../bookings/bookings_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../layout/app_layout.dart';
 import '../reports/reports_content.dart';
 import '../reports/sales_report_screen.dart';
 import '../reports/vehicle_report_screen.dart';
+import '../workflow/workflow_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
@@ -26,13 +29,16 @@ class _MainScreenState extends State<MainScreen>
     with SingleTickerProviderStateMixin {
   static const int _dashboardTabIndex = 0;
   static const int _bookingsTabIndex = 1;
-  static const int _reportsOverviewTabIndex = 2;
-  static const int _salesReportTabIndex = 3;
-  static const int _vehicleReportTabIndex = 4;
-  static const int _settingsTabIndex = 5;
+  static const int _bookingDetailTabIndex = 2;
+  static const int _workflowTabIndex = 3;
+  static const int _reportsOverviewTabIndex = 4;
+  static const int _salesReportTabIndex = 5;
+  static const int _vehicleReportTabIndex = 6;
+  static const int _settingsTabIndex = 7;
 
   late final TabController _tabController;
   late int _activeIndex;
+  BookingModel? _selectedBooking;
 
   @override
   void initState() {
@@ -68,6 +74,9 @@ class _MainScreenState extends State<MainScreen>
     if (index == _bookingsTabIndex) {
       return AppConstants.routeBookings;
     }
+    if (index == _bookingDetailTabIndex || index == _workflowTabIndex) {
+      return AppConstants.routeBookings;
+    }
     if (index == _reportsOverviewTabIndex) {
       return AppConstants.routeReports;
     }
@@ -88,6 +97,9 @@ class _MainScreenState extends State<MainScreen>
       return 0;
     }
     if (tabIndex == _bookingsTabIndex) {
+      return 1;
+    }
+    if (tabIndex == _bookingDetailTabIndex || tabIndex == _workflowTabIndex) {
       return 1;
     }
     if (tabIndex == _settingsTabIndex) {
@@ -130,6 +142,28 @@ class _MainScreenState extends State<MainScreen>
     });
   }
 
+  void _openBookingDetail(BookingModel booking) {
+    setState(() {
+      _selectedBooking = booking;
+      _activeIndex = _bookingDetailTabIndex;
+    });
+    _tabController.animateTo(_bookingDetailTabIndex);
+  }
+
+  void _openWorkflow() {
+    setState(() {
+      _activeIndex = _workflowTabIndex;
+    });
+    _tabController.animateTo(_workflowTabIndex);
+  }
+
+  void _backToBookingsTab() {
+    setState(() {
+      _activeIndex = _bookingsTabIndex;
+    });
+    _tabController.animateTo(_bookingsTabIndex);
+  }
+
   void _onMainNavigationTap(int index) {
     final targetTabIndex = _tabIndexForMainNavigation(index);
     if (targetTabIndex == _activeIndex) {
@@ -153,7 +187,18 @@ class _MainScreenState extends State<MainScreen>
         physics: const NeverScrollableScrollPhysics(),
         children: [
           const DashboardOverviewContent(),
-          BookingsContent(initialSection: widget.initialBookingSection),
+          BookingsContent(
+            initialSection: widget.initialBookingSection,
+            onOpenBookingDetail: _openBookingDetail,
+            onStartWorkflow: _openWorkflow,
+          ),
+          _selectedBooking == null
+              ? const SizedBox.shrink()
+              : BookingDetailContent(
+                  booking: _selectedBooking!,
+                  onBack: _backToBookingsTab,
+                ),
+          const WorkflowContent(),
           ReportsContent(onNavigateToTab: _tabController.animateTo),
           const SalesReportContent(),
           const VehicleReportContent(),

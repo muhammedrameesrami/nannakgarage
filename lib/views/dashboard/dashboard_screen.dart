@@ -164,6 +164,7 @@ class _DashboardOverviewContentState
         engineNumber: inventoryVehicle.engineNumber,
         chassisNumber: inventoryVehicle.chassisNumber,
         drivenKm: inventoryVehicle.drivenKm,
+        onSubmit: _openOverview,
       );
     }
 
@@ -173,9 +174,9 @@ class _DashboardOverviewContentState
       case AppConstants.statusGateEntry:
         return GateEntryScreen(onSubmit: _openOverview);
       case AppConstants.statusJobCard:
-        return const JobCardScreen();
+        return JobCardScreen(onSubmit: _openOverview);
       case AppConstants.statusEstimation:
-        return const EstimationScreen();
+        return EstimationScreen(onSubmit: _openOverview);
       case AppConstants.statusService:
         return const ServiceCompletionScreen();
       case AppConstants.statusQualityCheck:
@@ -284,6 +285,83 @@ class _DashboardOverviewContentState
                 fontSize: context.csp(28, minSize: 24),
                 fontWeight: FontWeight.bold,
                 color: ColorPalette.textPrimary,
+              ),
+            ),
+            SizedBox(height: context.h(24)),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _overviewMetrics.map((metric) {
+                  return Container(
+                    constraints: BoxConstraints(
+                      minWidth: context.screenWidth < 768 ? 170 : 205,
+                    ),
+                    margin: EdgeInsets.only(
+                      right: metric == _overviewMetrics.last ? 0 : 14,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: metric.color.withValues(alpha: 0.16),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: metric.color.withValues(alpha: 0.12),
+                          ),
+                          child: Icon(
+                            metric.icon,
+                            color: metric.color,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              metric.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: context.sp(12),
+                                color: ColorPalette.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              metric.value,
+                              style: TextStyle(
+                                fontSize: context.sp(20),
+                                fontWeight: FontWeight.w700,
+                                color: ColorPalette.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
             ),
             SizedBox(height: context.h(24)),
@@ -727,6 +805,41 @@ class _SectionVisual {
 
   const _SectionVisual({required this.imagePath, required this.color});
 }
+
+class _OverviewMetric {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _OverviewMetric({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+}
+
+const List<_OverviewMetric> _overviewMetrics = [
+  _OverviewMetric(
+    title: 'Total Vehicles',
+    value: '128',
+    icon: Icons.directions_car_filled_rounded,
+    color: Color(0xFF0F766E),
+  ),
+  _OverviewMetric(
+    title: 'Pending Deliveries',
+    value: '14',
+    icon: Icons.schedule_rounded,
+    color: Color(0xFFB45309),
+  ),
+  _OverviewMetric(
+    title: 'Today Revenue',
+    value: '24,500',
+    icon: Icons.payments_rounded,
+    color: Color(0xFF1D4ED8),
+  ),
+];
 
 const Map<String, _SectionVisual> _sectionVisuals = {
   DashboardController.gateEntry: _SectionVisual(

@@ -10,8 +10,8 @@ import '../service/service_completion_screen.dart';
 import '../quality/quality_check_screen.dart';
 import '../billing/billing_screen.dart';
 
-class WorkflowScreen extends ConsumerWidget {
-  const WorkflowScreen({Key? key}) : super(key: key);
+class WorkflowContent extends ConsumerWidget {
+  const WorkflowContent({super.key});
 
   Widget _buildCurrentStepView(String currentStep) {
     switch (currentStep) {
@@ -36,17 +36,26 @@ class WorkflowScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(workflowControllerProvider);
 
-    return AppLayout(
-      currentRoute: AppConstants.routeBookings,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32.0),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: _buildCurrentStepView(state.currentStep),
-          ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32.0),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: _buildCurrentStepView(state.currentStep),
         ),
       ),
+    );
+  }
+}
+
+class WorkflowScreen extends ConsumerWidget {
+  const WorkflowScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AppLayout(
+      currentRoute: AppConstants.routeBookings,
+      child: const WorkflowContent(),
     );
   }
 }

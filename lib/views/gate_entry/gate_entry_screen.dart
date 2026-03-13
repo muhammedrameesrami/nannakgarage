@@ -1,10 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:camera/camera.dart';
 import '../../common/widgets/web_camera_dialog.dart';
 import '../../core/theme/color_palette.dart';
 import '../../common/widgets/app_button.dart';
@@ -31,10 +33,14 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
   File? _pickedImage;
   Uint8List? _webImageBytes;
   final ImagePicker _picker = ImagePicker();
+  final TextRecognizer _textRecognizer = TextRecognizer(
+    script: TextRecognitionScript.latin,
+  );
 
   String? _selectedBrand;
   String? _selectedModel;
   String? _selectedBookingId;
+  bool _isExtractingVehicleNumber = false;
 
   @override
   void dispose() {
@@ -42,6 +48,7 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
     _customerPhoneController.dispose();
     _vehicleNumberController.dispose();
     _kmDrivenController.dispose();
+    _textRecognizer.close();
     super.dispose();
   }
 
@@ -77,6 +84,7 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
             _webImageBytes = imageBytes;
             _pickedImage = null;
           });
+          await _extractVehicleNumberFromWebBytes(imageBytes);
         }
         return;
       }
@@ -96,17 +104,153 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
             _webImageBytes = bytes;
             _pickedImage = null; // Clear file-based image if any
           });
+          await _extractVehicleNumberFromWebBytes(bytes);
         } else {
           if (!mounted) return;
           setState(() {
             _pickedImage = File(image.path);
             _webImageBytes = null; // Clear web-based image if any
           });
+          await _extractVehicleNumberFromImage(image.path);
         }
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
+      _showMessage('Unable to pick the image right now.');
     }
+  }
+
+  Future<void> _extractVehicleNumberFromWebBytes(Uint8List imageBytes) async {
+    final dataUrl = 'data:image/jpeg;base64,${base64Encode(imageBytes)}';
+    await _extractVehicleNumberFromSource(
+      extractText: () async => FlutterTesseractOcr.extractText(
+        dataUrl,
+        language: 'eng',
+        args: {'psm': '7', 'preserve_interword_spaces': '1'},
+      ),
+    );
+  }
+
+  Future<void> _extractVehicleNumberFromImage(String imagePath) async {
+    await _extractVehicleNumberFromSource(
+      extractText: () async {
+        final inputImage = InputImage.fromFilePath(imagePath);
+        final recognizedText = await _textRecognizer.processImage(inputImage);
+        return recognizedText.text;
+      },
+    );
+  }
+
+  Future<void> _extractVehicleNumberFromSource({
+    required Future<String> Function() extractText,
+  }) async {
+    if (!mounted) return;
+
+    setState(() => _isExtractingVehicleNumber = true);
+
+    try {
+      final extractedText = await extractText();
+      final vehicleNumber = _extractVehicleNumber(extractedText);
+
+      if (!mounted) return;
+
+      if (vehicleNumber != null) {
+        setState(() {
+          _vehicleNumberController.text = vehicleNumber;
+        });
+        _showMessage('Vehicle number detected and filled automatically.');
+      } else {
+        _showMessage(
+          'Could not detect a clear vehicle number. Please review and enter it manually if needed.',
+        );
+      }
+    } catch (e) {
+      debugPrint('Error extracting vehicle number: $e');
+      if (mounted) {
+        _showMessage(
+          'Number plate reading failed. You can still enter the vehicle number manually.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExtractingVehicleNumber = false);
+      }
+    }
+  }
+
+  String? _extractVehicleNumber(String rawText) {
+    final normalizedText = rawText.toUpperCase();
+    final lines = normalizedText
+        .split(RegExp(r'[\r\n]+'))
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty);
+
+    String? bestCandidate;
+    int bestScore = -1;
+
+    for (final line in lines) {
+      final variants = <String>{
+        line,
+        line.replaceAll(RegExp(r'[^A-Z0-9 ]'), ' '),
+        line.replaceAll(RegExp(r'[^A-Z0-9]'), ''),
+      };
+
+      for (final variant in variants) {
+        final candidate = _normalizeVehicleNumberCandidate(variant);
+        if (candidate == null) continue;
+
+        final score = _vehicleNumberScore(candidate);
+        if (score > bestScore) {
+          bestScore = score;
+          bestCandidate = candidate;
+        }
+      }
+    }
+
+    return bestCandidate;
+  }
+
+  String? _normalizeVehicleNumberCandidate(String value) {
+    final cleaned = value.replaceAll(RegExp(r'[^A-Z0-9]'), '').trim();
+
+    if (cleaned.length < 5 || cleaned.length > 12) {
+      return null;
+    }
+
+    if (!RegExp(r'[A-Z]').hasMatch(cleaned) ||
+        !RegExp(r'\d').hasMatch(cleaned)) {
+      return null;
+    }
+
+    return cleaned;
+  }
+
+  int _vehicleNumberScore(String candidate) {
+    var score = 0;
+
+    if (RegExp(r'^[A-Z]{2,3}\d').hasMatch(candidate)) {
+      score += 5;
+    }
+
+    if (RegExp(r'\d{2,4}$').hasMatch(candidate)) {
+      score += 3;
+    }
+
+    final letterCount = RegExp(r'[A-Z]').allMatches(candidate).length;
+    final digitCount = RegExp(r'\d').allMatches(candidate).length;
+
+    score += letterCount + digitCount;
+    score -= (candidate.length - 10).abs();
+
+    return score;
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _showImageSourceDialog() {
@@ -177,115 +321,105 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
         ),
         const SizedBox(height: 24),
         Center(
-          child: InkWell(
-            onTap: _showImageSourceDialog,
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              height: 200,
-              width: 250,
-              decoration: BoxDecoration(
-                border: Border.all(color: ColorPalette.borderColor),
+          child: Column(
+            children: [
+              InkWell(
+                onTap: _showImageSourceDialog,
                 borderRadius: BorderRadius.circular(8),
-                color: ColorPalette.backgroundColor,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Stack(
-                  children: [
-                    if (_pickedImage == null && _webImageBytes == null)
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.camera_alt_outlined,
-                              size: 32,
-                              color: ColorPalette.textSecondary,
+                child: Container(
+                  height: 200,
+                  width: 250,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: ColorPalette.borderColor),
+                    borderRadius: BorderRadius.circular(8),
+                    color: ColorPalette.backgroundColor,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Stack(
+                      children: [
+                        if (_pickedImage == null && _webImageBytes == null)
+                          Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.camera_alt_outlined,
+                                  size: 32,
+                                  color: ColorPalette.textSecondary,
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Upload Number Plate',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: ColorPalette.textSecondary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Upload Number Plate',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: ColorPalette.textSecondary,
-                                fontSize: 13,
+                          )
+                        else if (kIsWeb && _webImageBytes != null)
+                          Image.memory(
+                            _webImageBytes!,
+                            width: 250,
+                            height: 200,
+                            fit: BoxFit.fill,
+                          )
+                        else if (_pickedImage != null)
+                          Image.file(
+                            _pickedImage!,
+                            width: 250,
+                            height: 200,
+                            fit: BoxFit.fill,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                ),
+                              );
+                            },
+                          ),
+                        if (_pickedImage != null || _webImageBytes != null)
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: InkWell(
+                              onTap: () => setState(() {
+                                _pickedImage = null;
+                                _webImageBytes = null;
+                              }),
+                              child: CircleAvatar(
+                                radius: 12,
+                                backgroundColor: Colors.black54,
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                      )
-                    else if (kIsWeb && _webImageBytes != null)
-                      Image.memory(
-                        _webImageBytes!,
-                        width: 250,
-                        height: 200,
-                        fit: BoxFit.fill,
-                      )
-                    else if (_pickedImage != null)
-                      Image.file(
-                        _pickedImage!,
-                        width: 250,
-                        height: 200,
-                        fit: BoxFit.fill,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Center(
-                            child: Icon(Icons.error_outline, color: Colors.red),
-                          );
-                        },
-                      ),
-                    if (_pickedImage != null || _webImageBytes != null)
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: InkWell(
-                          onTap: () => setState(() {
-                            _pickedImage = null;
-                            _webImageBytes = null;
-                          }),
-                          child: CircleAvatar(
-                            radius: 12,
-                            backgroundColor: Colors.black54,
-                            child: const Icon(
-                              Icons.close,
-                              size: 16,
-                              color: Colors.white,
-                            ),
                           ),
-                        ),
-                      ),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text(
+                _isExtractingVehicleNumber
+                    ? 'Reading vehicle number from the plate image...'
+                    : 'After upload, we will try to fill the vehicle number automatically on web and mobile.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: ColorPalette.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 32),
-        const Text(
-          'Customer Details',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-        ),
-        Divider(color: ColorPalette.secondaryColor),
-        SizedBox(height: 16),
-
-        Row(
-          children: [
-            Expanded(
-              child: AppTextField(
-                label: 'Customer Name',
-                hint: 'John Doe',
-                controller: _customerNameController,
-              ),
-            ),
-            const SizedBox(width: 24),
-            Expanded(
-              child: AppTextField(
-                label: 'Customer Phone',
-                hint: '+1 987 654 3210',
-                keyboardType: TextInputType.phone,
-                controller: _customerPhoneController,
-              ),
-            ),
-          ],
         ),
         const SizedBox(height: 32),
         const Text(
@@ -369,8 +503,34 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
           ],
         ),
         const SizedBox(height: 32),
+        const Text(
+          'Customer Details',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
+        Divider(color: ColorPalette.secondaryColor),
+        SizedBox(height: 16),
+
+        Row(
+          children: [
+            Expanded(
+              child: AppTextField(
+                label: 'Customer Name',
+                hint: 'John Doe',
+                controller: _customerNameController,
+              ),
+            ),
+            const SizedBox(width: 24),
+            Expanded(
+              child: AppTextField(
+                label: 'Customer Phone',
+                hint: '+1 987 654 3210',
+                keyboardType: TextInputType.phone,
+                controller: _customerPhoneController,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 24),
-        SizedBox(height: 24),
         Center(
           child: AppButton(
             text: 'Add Vehicle',

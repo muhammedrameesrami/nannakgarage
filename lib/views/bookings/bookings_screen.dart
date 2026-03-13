@@ -11,30 +11,19 @@ import '../../common/widgets/loading_widget.dart';
 import '../../controllers/booking_controller.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../controllers/workflow_controller.dart';
-import '../layout/app_layout.dart';
-import '../workflow/workflow_screen.dart';
-import 'booking_detail_screen.dart';
-
-class BookingsScreen extends ConsumerWidget {
-  final String? initialSection;
-
-  const BookingsScreen({Key? key, this.initialSection}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return AppLayout(
-      currentRoute: AppConstants.routeBookings,
-      child: BookingsContent(initialSection: initialSection),
-    );
-  }
-}
+import '../../models/booking_model.dart';
 
 class BookingsContent extends ConsumerWidget {
   final String? initialSection;
+  final ValueChanged<BookingModel>? onOpenBookingDetail;
+  final VoidCallback? onStartWorkflow;
 
-  const BookingsContent({super.key, this.initialSection});
-
-
+  const BookingsContent({
+    super.key,
+    this.initialSection,
+    this.onOpenBookingDetail,
+    this.onStartWorkflow,
+  });
 
   String _canonical(String value) {
     return value.toLowerCase().replaceAll(' ', '');
@@ -213,15 +202,9 @@ class BookingsContent extends ConsumerWidget {
                                         final booking = bookings[index];
                                         return InkWell(
                                           onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    BookingDetailScreen(
-                                                      booking: booking,
-                                                    ),
-                                              ),
-                                            );
+                                            if (onOpenBookingDetail != null) {
+                                              onOpenBookingDetail!(booking);
+                                            }
                                           },
                                           hoverColor: ColorPalette.hoverColor,
                                           child: Padding(
@@ -310,12 +293,9 @@ class BookingsContent extends ConsumerWidget {
             child: FloatingActionButton.extended(
               onPressed: () {
                 ref.read(workflowControllerProvider.notifier).startNewBooking();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const WorkflowScreen(),
-                  ),
-                );
+                if (onStartWorkflow != null) {
+                  onStartWorkflow!();
+                }
               },
               icon: const Icon(Icons.add),
               label: const Text('Add Vehicle'),

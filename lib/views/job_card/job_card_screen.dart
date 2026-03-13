@@ -5,13 +5,38 @@ import '../../common/widgets/app_button.dart';
 import '../../common/widgets/app_textfield.dart';
 import '../../common/widgets/app_dropdown.dart';
 import '../../controllers/workflow_controller.dart';
-import '../main/main_screen.dart';
 
-class JobCardScreen extends ConsumerWidget {
-  const JobCardScreen({Key? key}) : super(key: key);
+class JobCardScreen extends ConsumerStatefulWidget {
+  final VoidCallback? onSubmit;
+  const JobCardScreen({super.key, this.onSubmit});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<JobCardScreen> createState() => _JobCardScreenState();
+}
+
+class _JobCardScreenState extends ConsumerState<JobCardScreen> {
+  static const List<String> _technicians = [
+    'Afsal',
+    'Riyas',
+    'Shameer',
+    'Nithin',
+    'Suhail',
+  ];
+  static const List<String> _inspectionItems = [
+    'Brakes',
+    'Engine',
+    'Lights',
+    'Battery',
+    'Suspension',
+  ];
+
+  String? _selectedTechnician;
+  late final Map<String, bool> _inspectionSelections = {
+    for (final item in _inspectionItems) item: false,
+  };
+
+  @override
+  Widget build(BuildContext context) {
     final notifier = ref.read(workflowControllerProvider.notifier);
 
     return Column(
@@ -28,38 +53,6 @@ class JobCardScreen extends ConsumerWidget {
                 color: ColorPalette.textPrimary,
               ),
             ),
-            Row(
-              children: [
-                AppButton(
-                  text: 'Cancel',
-                  isPrimary: false,
-                  onPressed: () => Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MainScreen(initialIndex: 0),
-                    ),
-                    (route) => false,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                AppButton(
-                  text: 'Previous',
-                  isPrimary: false,
-                  onPressed: () => notifier.previousStep(),
-                ),
-                const SizedBox(width: 16),
-                AppButton(
-                  text: 'Save',
-                  onPressed: () {}, 
-                ),
-                const SizedBox(width: 16),
-                AppButton(
-                  text: 'Next',
-                  icon: Icons.chevron_right,
-                  onPressed: () => notifier.nextStep(),
-                ),
-              ],
-            ),
           ],
         ),
         const SizedBox(height: 32),
@@ -69,7 +62,20 @@ class JobCardScreen extends ConsumerWidget {
               child: AppDropdown<String>(
                 label: 'Technician Assignment',
                 hint: 'Select Technician',
-                items: const [],
+                value: _selectedTechnician,
+                items: _technicians
+                    .map(
+                      (technician) => DropdownMenuItem<String>(
+                        value: technician,
+                        child: Text(technician),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedTechnician = value;
+                  });
+                },
               ),
             ),
             const SizedBox(width: 24),
@@ -89,18 +95,30 @@ class JobCardScreen extends ConsumerWidget {
           maxLines: 4,
         ),
         const SizedBox(height: 32),
-        Text('Inspection Checklist', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+        Text(
+          'Inspection Checklist',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
         const SizedBox(height: 16),
         Wrap(
           spacing: 24,
           runSpacing: 16,
-          children: [
-            _buildChecklistItem('Brakes'),
-            _buildChecklistItem('Engine'),
-            _buildChecklistItem('Lights'),
-            _buildChecklistItem('Battery'),
-            _buildChecklistItem('Suspension'),
-          ],
+          children: _inspectionItems
+              .map((item) => _buildChecklistItem(item))
+              .toList(),
+        ),
+        const SizedBox(height: 32),
+        Center(
+          child: AppButton(
+            text: 'Save',
+            onPressed: () {
+              if (widget.onSubmit != null) {
+                widget.onSubmit!();
+              } else {
+                notifier.nextStep();
+              }
+            },
+          ),
         ),
       ],
     );
@@ -111,8 +129,12 @@ class JobCardScreen extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Checkbox(
-          value: false,
-          onChanged: (val) {},
+          value: _inspectionSelections[title] ?? false,
+          onChanged: (val) {
+            setState(() {
+              _inspectionSelections[title] = val ?? false;
+            });
+          },
           activeColor: ColorPalette.primaryColor,
         ),
         Text(title),

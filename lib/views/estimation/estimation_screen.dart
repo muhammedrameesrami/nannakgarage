@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nannak_garage/controllers/workflow_controller.dart';
 import '../../core/theme/color_palette.dart';
 import '../../common/widgets/app_button.dart';
 
 class EstimationScreen extends ConsumerStatefulWidget {
-  const EstimationScreen({super.key});
+  final VoidCallback? onSubmit;
+  const EstimationScreen({super.key, this.onSubmit});
 
   @override
   ConsumerState<EstimationScreen> createState() => _EstimationScreenState();
@@ -78,7 +80,7 @@ class _EstimationScreenState extends ConsumerState<EstimationScreen> {
                               (part) => DropdownMenuItem(
                                 value: part,
                                 child: Text(
-                                  '${part.name} (\$${part.unitPrice.toStringAsFixed(2)})',
+                                  '${part.name} (₹${part.unitPrice.toStringAsFixed(2)})',
                                 ),
                               ),
                             )
@@ -140,8 +142,8 @@ class _EstimationScreenState extends ConsumerState<EstimationScreen> {
                             values: [
                               part.name,
                               '${part.quantity}',
-                              '\$${part.unitPrice.toStringAsFixed(2)}',
-                              '\$${part.totalPrice.toStringAsFixed(2)}',
+                              '₹${part.unitPrice.toStringAsFixed(2)}',
+                              '₹${part.totalPrice.toStringAsFixed(2)}',
                             ],
                           ),
                         ),
@@ -201,7 +203,7 @@ class _EstimationScreenState extends ConsumerState<EstimationScreen> {
                               (labour) => DropdownMenuItem(
                                 value: labour,
                                 child: Text(
-                                  '${labour.description} (\$${labour.amount.toStringAsFixed(2)})',
+                                  '${labour.description} (₹${labour.amount.toStringAsFixed(2)})',
                                 ),
                               ),
                             )
@@ -246,7 +248,7 @@ class _EstimationScreenState extends ConsumerState<EstimationScreen> {
                           (labour) => _buildDialogTableRow(
                             values: [
                               labour.description,
-                              '\$${labour.amount.toStringAsFixed(2)}',
+                              '₹${labour.amount.toStringAsFixed(2)}',
                             ],
                           ),
                         ),
@@ -382,11 +384,12 @@ class _EstimationScreenState extends ConsumerState<EstimationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final notifier = ref.read(workflowControllerProvider.notifier);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             const Text(
               'Service Estimation',
@@ -396,7 +399,6 @@ class _EstimationScreenState extends ConsumerState<EstimationScreen> {
                 color: ColorPalette.textPrimary,
               ),
             ),
-            AppButton(text: 'Save', onPressed: () {}),
           ],
         ),
         const SizedBox(height: 32),
@@ -407,7 +409,7 @@ class _EstimationScreenState extends ConsumerState<EstimationScreen> {
             value: service.selected,
             onChanged: (value) => _toggleService(service, value),
             title: Text(service.name),
-            subtitle: Text('\$${service.price.toStringAsFixed(2)}'),
+            subtitle: Text('₹${service.price.toStringAsFixed(2)}'),
             activeColor: ColorPalette.primaryColor,
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
@@ -466,13 +468,13 @@ class _EstimationScreenState extends ConsumerState<EstimationScreen> {
                           Padding(
                             padding: const EdgeInsets.all(8),
                             child: Text(
-                              '\$${part.unitPrice.toStringAsFixed(2)}',
+                              '₹${part.unitPrice.toStringAsFixed(2)}',
                             ),
                           ),
                           Padding(
                             padding: const EdgeInsets.all(8),
                             child: Text(
-                              '\$${part.totalPrice.toStringAsFixed(2)}',
+                              '₹${part.totalPrice.toStringAsFixed(2)}',
                             ),
                           ),
                         ],
@@ -521,9 +523,7 @@ class _EstimationScreenState extends ConsumerState<EstimationScreen> {
                           ),
                           Padding(
                             padding: const EdgeInsets.all(8),
-                            child: Text(
-                              '\$${labour.amount.toStringAsFixed(2)}',
-                            ),
+                            child: Text('₹${labour.amount.toStringAsFixed(2)}'),
                           ),
                         ],
                       ),
@@ -540,7 +540,7 @@ class _EstimationScreenState extends ConsumerState<EstimationScreen> {
             ),
             const SizedBox(width: 16),
             Text(
-              '\$${_totalAmount.toStringAsFixed(2)}',
+              '₹${_totalAmount.toStringAsFixed(2)}',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 24,
@@ -548,6 +548,19 @@ class _EstimationScreenState extends ConsumerState<EstimationScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 32),
+        Center(
+          child: AppButton(
+            text: 'Save',
+            onPressed: () {
+              if (widget.onSubmit != null) {
+                widget.onSubmit!();
+              } else {
+                notifier.nextStep();
+              }
+            },
+          ),
         ),
       ],
     );

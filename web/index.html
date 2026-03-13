@@ -33,6 +33,19 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <script src="https://unpkg.com/tesseract.js@v4.0.2/dist/tesseract.min.js"></script>
+  <script>
+    async function _extractText(imagePath, mapData) {
+      const worker = await Tesseract.createWorker();
+      await worker.load();
+      await worker.loadLanguage(mapData.language);
+      await worker.initialize(mapData.language);
+      await worker.setParameters(mapData.args || {});
+      const result = await worker.recognize(imagePath, {}, worker.id);
+      await worker.terminate();
+      return result.data.text;
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

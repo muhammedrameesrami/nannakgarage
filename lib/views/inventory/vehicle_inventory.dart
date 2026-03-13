@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nannak_garage/controllers/workflow_controller.dart';
 import '../../common/widgets/app_button.dart';
 import '../../core/theme/color_palette.dart';
 
-class VehicleInventoryScreen extends StatefulWidget {
+class VehicleInventoryScreen extends ConsumerStatefulWidget {
   final String ownerName;
   final String brand;
   final String model;
   final String engineNumber;
   final String chassisNumber;
   final String drivenKm;
+  final VoidCallback? onSubmit;
 
   const VehicleInventoryScreen({
     super.key,
@@ -18,13 +21,14 @@ class VehicleInventoryScreen extends StatefulWidget {
     required this.engineNumber,
     required this.chassisNumber,
     required this.drivenKm,
+    this.onSubmit,
   });
 
   @override
-  State<VehicleInventoryScreen> createState() => _VehicleInventoryScreenState();
+  ConsumerState<VehicleInventoryScreen> createState() => _VehicleInventoryScreenState();
 }
 
-class _VehicleInventoryScreenState extends State<VehicleInventoryScreen> {
+class _VehicleInventoryScreenState extends ConsumerState<VehicleInventoryScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _ownerNameController;
   late final TextEditingController _brandController;
@@ -155,6 +159,7 @@ class _VehicleInventoryScreenState extends State<VehicleInventoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final notifier = ref.read(workflowControllerProvider.notifier);
     return Form(
       key: _formKey,
       child: Column(
@@ -287,6 +292,11 @@ class _VehicleInventoryScreenState extends State<VehicleInventoryScreen> {
                         content: Text('Inventory details saved locally'),
                       ),
                     );
+                    if (widget.onSubmit != null) {
+                      widget.onSubmit!();
+                    } else {
+                      notifier.nextStep();
+                    }
                   }
                 },
               ),
