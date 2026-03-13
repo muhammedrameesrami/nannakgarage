@@ -23,8 +23,15 @@ class AppConstants {
   static const List<Map<String, dynamic>> mainNavigationItems = [
     {'title': 'Dashboard', 'route': routeDashboard, 'icon': 'dashboard'},
     {'title': 'Bookings', 'route': routeBookings, 'icon': 'bookings'},
-    {'title': 'Reports', 'route': routeReports, 'icon': 'reports'},
-    {'title': 'Settings', 'route': routeSettings, 'icon': 'settings'},
+    {
+      'title': 'Reports',
+      'route': routeReports,
+      'icon': 'reports',
+      'children': [
+        {'title': 'Sales Report', 'route': '$routeReports/sales'},
+        {'title': 'Vehicle Report', 'route': '$routeReports/vehicle'},
+      ]
+    },
   ];
 
   static const List<String> workflowSteps = [

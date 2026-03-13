@@ -23,7 +23,7 @@ class SalesReportScreen extends ConsumerWidget {
     );
 
     return AppLayout(
-      currentRoute: AppConstants.routeReports,
+      currentRoute: '${AppConstants.routeReports}/sales',
       child: Padding(
         padding: EdgeInsets.all(context.w(32)),
         child: Column(
