@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/theme/color_palette.dart';
 import '../bookings/bookings_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../layout/app_layout.dart';
 import '../reports/reports_content.dart';
+import '../reports/sales_report_screen.dart';
+import '../reports/vehicle_report_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
@@ -21,18 +24,22 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen>
     with SingleTickerProviderStateMixin {
+  static const int _dashboardTabIndex = 0;
+  static const int _bookingsTabIndex = 1;
+  static const int _reportsOverviewTabIndex = 2;
+  static const int _salesReportTabIndex = 3;
+  static const int _vehicleReportTabIndex = 4;
+  static const int _settingsTabIndex = 5;
+
   late final TabController _tabController;
   late int _activeIndex;
 
   @override
   void initState() {
     super.initState();
-    _activeIndex = widget.initialIndex.clamp(
-      0,
-      AppConstants.mainNavigationItems.length - 1,
-    );
+    _activeIndex = widget.initialIndex.clamp(0, _settingsTabIndex);
     _tabController = TabController(
-      length: AppConstants.mainNavigationItems.length,
+      length: _settingsTabIndex + 1,
       vsync: this,
       initialIndex: _activeIndex,
     );
@@ -55,16 +62,82 @@ class _MainScreenState extends State<MainScreen>
   }
 
   String _routeForIndex(int index) {
-    return AppConstants.mainNavigationItems[index]['route'] as String;
+    if (index == _dashboardTabIndex) {
+      return AppConstants.routeDashboard;
+    }
+    if (index == _bookingsTabIndex) {
+      return AppConstants.routeBookings;
+    }
+    if (index == _reportsOverviewTabIndex) {
+      return AppConstants.routeReports;
+    }
+    if (index == _salesReportTabIndex) {
+      return '${AppConstants.routeReports}/sales';
+    }
+    if (index == _vehicleReportTabIndex) {
+      return '${AppConstants.routeReports}/vehicle';
+    }
+    if (index == _settingsTabIndex) {
+      return AppConstants.routeSettings;
+    }
+    return AppConstants.routeDashboard;
+  }
+
+  int _mainNavigationIndexForTab(int tabIndex) {
+    if (tabIndex == _dashboardTabIndex) {
+      return 0;
+    }
+    if (tabIndex == _bookingsTabIndex) {
+      return 1;
+    }
+    if (tabIndex == _settingsTabIndex) {
+      return 3;
+    }
+    return 2;
+  }
+
+  int _tabIndexForMainNavigation(int navIndex) {
+    switch (navIndex) {
+      case 0:
+        return _dashboardTabIndex;
+      case 1:
+        return _bookingsTabIndex;
+      case 2:
+        return _reportsOverviewTabIndex;
+      case 3:
+        return _settingsTabIndex;
+      default:
+        return _dashboardTabIndex;
+    }
+  }
+
+  void _onSecondaryRouteTap(String route) {
+    int targetTabIndex = _activeIndex;
+
+    if (route == '${AppConstants.routeReports}/sales') {
+      targetTabIndex = _salesReportTabIndex;
+    } else if (route == '${AppConstants.routeReports}/vehicle') {
+      targetTabIndex = _vehicleReportTabIndex;
+    }
+
+    if (targetTabIndex == _activeIndex) {
+      return;
+    }
+
+    _tabController.animateTo(targetTabIndex);
+    setState(() {
+      _activeIndex = targetTabIndex;
+    });
   }
 
   void _onMainNavigationTap(int index) {
-    if (index == _activeIndex) {
+    final targetTabIndex = _tabIndexForMainNavigation(index);
+    if (targetTabIndex == _activeIndex) {
       return;
     }
-    _tabController.animateTo(index);
+    _tabController.animateTo(targetTabIndex);
     setState(() {
-      _activeIndex = index;
+      _activeIndex = targetTabIndex;
     });
   }
 
@@ -72,16 +145,40 @@ class _MainScreenState extends State<MainScreen>
   Widget build(BuildContext context) {
     return AppLayout(
       currentRoute: _routeForIndex(_activeIndex),
-      activeMainIndex: _activeIndex,
+      activeMainIndex: _mainNavigationIndexForTab(_activeIndex),
       onMainNavigationTap: _onMainNavigationTap,
+      onSecondaryRouteTap: _onSecondaryRouteTap,
       child: TabBarView(
         controller: _tabController,
         physics: const NeverScrollableScrollPhysics(),
         children: [
           const DashboardOverviewContent(),
           BookingsContent(initialSection: widget.initialBookingSection),
-          const ReportsContent(),
+          ReportsContent(onNavigateToTab: _tabController.animateTo),
+          const SalesReportContent(),
+          const VehicleReportContent(),
+          const _ComingSoonPage(title: 'Settings'),
         ],
+      ),
+    );
+  }
+}
+
+class _ComingSoonPage extends StatelessWidget {
+  final String title;
+
+  const _ComingSoonPage({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        '$title Coming Soon',
+        style: const TextStyle(
+          color: ColorPalette.textSecondary,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

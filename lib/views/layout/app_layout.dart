@@ -7,8 +7,6 @@ import '../../core/constants/app_constants.dart';
 import '../../controllers/workflow_controller.dart';
 import '../auth/login_screen.dart';
 import '../main/main_screen.dart';
-import '../reports/sales_report_screen.dart';
-import '../reports/vehicle_report_screen.dart';
 
 class AppLayout extends ConsumerWidget {
   final Widget child;
@@ -16,6 +14,7 @@ class AppLayout extends ConsumerWidget {
   final bool isWorkflowMode;
   final int? activeMainIndex;
   final ValueChanged<int>? onMainNavigationTap;
+  final ValueChanged<String>? onSecondaryRouteTap;
 
   const AppLayout({
     super.key,
@@ -24,6 +23,7 @@ class AppLayout extends ConsumerWidget {
     this.isWorkflowMode = false,
     this.activeMainIndex,
     this.onMainNavigationTap,
+    this.onSecondaryRouteTap,
   });
 
   void _handleLogout(BuildContext context, WidgetRef ref) {
@@ -483,10 +483,8 @@ class AppLayout extends ConsumerWidget {
             return InkWell(
               onTap: () {
                 if (!childIsActive) {
-                  if (child['route'] == '${AppConstants.routeReports}/sales') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesReportScreen()));
-                  } else if (child['route'] == '${AppConstants.routeReports}/vehicle') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleReportScreen()));
+                  if (onSecondaryRouteTap != null) {
+                    onSecondaryRouteTap!(child['route'] as String);
                   }
                 }
               },

@@ -1,43 +1,28 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/color_palette.dart';
 import '../../core/utils/responsive.dart';
-import 'sales_report_screen.dart';
 
-class ReportsContent extends StatefulWidget {
-  const ReportsContent({super.key});
+class ReportsContent extends StatelessWidget {
+  final ValueChanged<int> onNavigateToTab;
 
-  @override
-  State<ReportsContent> createState() => _ReportsContentState();
-}
-
-class _ReportsContentState extends State<ReportsContent> {
-  String? _selectedReport;
-
-  void _openReport(String reportKey) {
-    setState(() {
-      _selectedReport = reportKey;
-    });
-  }
-
-  void _showOverview() {
-    setState(() {
-      _selectedReport = null;
-    });
-  }
+  const ReportsContent({super.key, required this.onNavigateToTab});
 
   @override
   Widget build(BuildContext context) {
-    if (_selectedReport == 'sales') {
-      return SalesReportContent(onBack: _showOverview);
-    }
-
     final reports = [
       {
         'title': 'Sales Report',
         'subtitle': 'Gate exit vehicles and billing summary',
         'icon': Icons.point_of_sale_rounded,
         'color': ColorPalette.primaryColor,
-        'key': 'sales',
+        'tabIndex': 3,
+      },
+      {
+        'title': 'Vehicle Report',
+        'subtitle': 'View all vehicle statistics and history',
+        'icon': Icons.directions_car_rounded,
+        'color': const Color(0xFF0EA5E9),
+        'tabIndex': 4,
       },
     ];
 
@@ -60,7 +45,7 @@ class _ReportsContentState extends State<ReportsContent> {
             runSpacing: context.h(20),
             children: reports.map((report) {
               return InkWell(
-                onTap: () => _openReport(report['key']! as String),
+                onTap: () => onNavigateToTab(report['tabIndex']! as int),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   width: context.w(280),

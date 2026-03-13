@@ -5,24 +5,9 @@ import '../../controllers/booking_controller.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/color_palette.dart';
 import '../../core/utils/responsive.dart';
-import '../layout/app_layout.dart';
-
-class SalesReportScreen extends ConsumerWidget {
-  const SalesReportScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return AppLayout(
-      currentRoute: '${AppConstants.routeReports}/sales',
-      child: SalesReportContent(onBack: () => Navigator.pop(context)),
-    );
-  }
-}
 
 class SalesReportContent extends ConsumerWidget {
-  final VoidCallback? onBack;
-
-  const SalesReportContent({super.key, this.onBack});
+  const SalesReportContent({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,14 +28,6 @@ class SalesReportContent extends ConsumerWidget {
         children: [
           Row(
             children: [
-              if (onBack != null) ...[
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: onBack,
-                  color: ColorPalette.textPrimary,
-                ),
-                const SizedBox(width: 8),
-              ],
               Text(
                 'Sales Report',
                 style: TextStyle(
