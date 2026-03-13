@@ -16,6 +16,7 @@ import '../billing/billing_screen.dart';
 import '../estimation/estimation_screen.dart';
 import '../gate_entry/gate_entry_screen.dart';
 import '../gate_exit/gate_exit_screen.dart';
+import '../inventory/vehicle_inventory.dart';
 import '../job_card/job_card_screen.dart';
 import '../quality/quality_check_screen.dart';
 import '../service/service_completion_screen.dart';
@@ -45,7 +46,46 @@ class _DashboardOverviewContentState
     extends ConsumerState<DashboardOverviewContent> {
   String? _selectedSection;
   bool _showSectionForm = false;
+  InventoryVehicleRecord? _selectedInventoryVehicle;
   final TextEditingController _searchController = TextEditingController();
+  final List<InventoryVehicleRecord> _inventoryVehicles = [
+    InventoryVehicleRecord(
+      id: 'inv-001',
+      vehicleNumber: 'KL 07 AB 1023',
+      ownerName: 'Rahul Nair',
+      brand: 'Toyota',
+      model: 'Innova',
+      engineNumber: 'ENG-1023-A1',
+      chassisNumber: 'CHS-8891-TY',
+      drivenKm: '45600',
+      dateLabel: '13 Mar 2026',
+      status: 'In Inventory',
+    ),
+    InventoryVehicleRecord(
+      id: 'inv-002',
+      vehicleNumber: 'KL 11 DF 2201',
+      ownerName: 'Anjali Menon',
+      brand: 'Hyundai',
+      model: 'Creta',
+      engineNumber: 'ENG-2201-H2',
+      chassisNumber: 'CHS-1203-HY',
+      drivenKm: '38950',
+      dateLabel: '12 Mar 2026',
+      status: 'In Inventory',
+    ),
+    InventoryVehicleRecord(
+      id: 'inv-003',
+      vehicleNumber: 'TN 09 CZ 8814',
+      ownerName: 'Arun Kumar',
+      brand: 'Mahindra',
+      model: 'XUV700',
+      engineNumber: 'ENG-8814-M3',
+      chassisNumber: 'CHS-7712-MH',
+      drivenKm: '22140',
+      dateLabel: '11 Mar 2026',
+      status: 'Ready for Update',
+    ),
+  ];
 
   @override
   void dispose() {
@@ -77,6 +117,8 @@ class _DashboardOverviewContentState
     setState(() {
       _selectedSection = section;
       _showSectionForm = false;
+      _selectedInventoryVehicle = null;
+      _searchController.clear();
     });
   }
 
@@ -84,12 +126,22 @@ class _DashboardOverviewContentState
     setState(() {
       _selectedSection = null;
       _showSectionForm = false;
+      _selectedInventoryVehicle = null;
+      _searchController.clear();
     });
   }
 
   void _openSectionFormFromBooking(BookingModel booking) {
     ref.read(workflowControllerProvider.notifier).openBooking(booking);
     setState(() {
+      _selectedInventoryVehicle = null;
+      _showSectionForm = true;
+    });
+  }
+
+  void _openInventoryForm(InventoryVehicleRecord vehicle) {
+    setState(() {
+      _selectedInventoryVehicle = vehicle;
       _showSectionForm = true;
     });
   }
@@ -102,11 +154,24 @@ class _DashboardOverviewContentState
   }
 
   Widget _buildFormContent() {
+    if (_selectedSection == DashboardController.inventory &&
+        _selectedInventoryVehicle != null) {
+      final inventoryVehicle = _selectedInventoryVehicle!;
+      return VehicleInventoryScreen(
+        ownerName: inventoryVehicle.ownerName,
+        brand: inventoryVehicle.brand,
+        model: inventoryVehicle.model,
+        engineNumber: inventoryVehicle.engineNumber,
+        chassisNumber: inventoryVehicle.chassisNumber,
+        drivenKm: inventoryVehicle.drivenKm,
+      );
+    }
+
     final step = ref.watch(workflowControllerProvider).currentStep;
 
     switch (step) {
       case AppConstants.statusGateEntry:
-        return const GateEntryScreen();
+        return GateEntryScreen(onSubmit: _openOverview);
       case AppConstants.statusJobCard:
         return const JobCardScreen();
       case AppConstants.statusEstimation:
@@ -132,6 +197,16 @@ class _DashboardOverviewContentState
     final bookingState = ref.watch(bookingControllerProvider);
 
     final query = _searchController.text.toLowerCase();
+    final inventoryVehicles = _selectedSection == DashboardController.inventory
+        ? _inventoryVehicles.where((vehicle) {
+            if (query.isEmpty) return true;
+            return vehicle.vehicleNumber.toLowerCase().contains(query) ||
+                vehicle.brand.toLowerCase().contains(query) ||
+                vehicle.model.toLowerCase().contains(query) ||
+                vehicle.ownerName.toLowerCase().contains(query);
+          }).toList()
+        : const <InventoryVehicleRecord>[];
+
     final sectionBookings = _selectedSection == null
         ? const <BookingModel>[]
         : bookingState.bookings.where((booking) {
@@ -164,11 +239,16 @@ class _DashboardOverviewContentState
               else if (_showSectionForm)
                 _buildSectionFormView()
               else
-                _buildSectionListView(
-                  section: _selectedSection!,
-                  bookingState: bookingState,
-                  bookings: sectionBookings,
-                ),
+                _selectedSection == DashboardController.inventory
+                    ? _buildInventoryListView(
+                        section: _selectedSection!,
+                        vehicles: inventoryVehicles,
+                      )
+                    : _buildSectionListView(
+                        section: _selectedSection!,
+                        bookingState: bookingState,
+                        bookings: sectionBookings,
+                      ),
             ],
           ),
         ),
@@ -426,6 +506,154 @@ class _DashboardOverviewContentState
     );
   }
 
+  Widget _buildInventoryListView({
+    required String section,
+    required List<InventoryVehicleRecord> vehicles,
+  }) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: _openOverview,
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back to Overview',
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$section Vehicles',
+                  style: TextStyle(
+                    fontSize: context.csp(28, minSize: 24),
+                    fontWeight: FontWeight.bold,
+                    color: ColorPalette.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              SizedBox(
+                width: context.w(320),
+                height: 45,
+                child: TextFormField(
+                  controller: _searchController,
+                  onChanged: (value) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Search inventory vehicles...',
+                    hintStyle: TextStyle(
+                      color: ColorPalette.textMuted,
+                      fontSize: context.sp(14),
+                    ),
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: ColorPalette.borderColor.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: ColorPalette.borderColor.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: ColorPalette.primaryColor,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: context.h(20)),
+          Expanded(
+            child: Card(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: context.w(24),
+                      vertical: context.h(16),
+                    ),
+                    child: Row(
+                      children: [
+                        _headerText('Vehicle Number'),
+                        _headerText('Brand & Model'),
+                        _headerText('Owner Name'),
+                        _headerText('Status'),
+                        _headerText('Date'),
+                      ],
+                    ),
+                  ),
+                  const Divider(color: ColorPalette.primaryColor),
+                  Expanded(
+                    child: vehicles.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No vehicles found in inventory.',
+                              style: TextStyle(
+                                color: ColorPalette.textSecondary,
+                                fontSize: context.sp(14),
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            itemCount: vehicles.length,
+                            separatorBuilder: (context, index) =>
+                                const Divider(),
+                            itemBuilder: (context, index) {
+                              final vehicle = vehicles[index];
+                              return InkWell(
+                                onTap: () => _openInventoryForm(vehicle),
+                                hoverColor: ColorPalette.hoverColor,
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: context.w(24),
+                                    vertical: context.h(16),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      _cellText(
+                                        vehicle.vehicleNumber,
+                                        bold: true,
+                                      ),
+                                      _cellText(
+                                        '${vehicle.brand} ${vehicle.model}',
+                                      ),
+                                      _cellText(vehicle.ownerName),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: StatusBadge(
+                                            status: vehicle.status,
+                                          ),
+                                        ),
+                                      ),
+                                      _cellText(vehicle.dateLabel),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionFormView() {
     return Expanded(
       child: Column(
@@ -505,6 +733,10 @@ const Map<String, _SectionVisual> _sectionVisuals = {
     imagePath: AssetConstants.gateEntry,
     color: Color(0xFF0D9488),
   ),
+  DashboardController.inventory: _SectionVisual(
+    imagePath: AssetConstants.inventory,
+    color: Color(0xFF0891B2),
+  ),
   DashboardController.estimation: _SectionVisual(
     imagePath: AssetConstants.estimation,
     color: Color(0xFFF59E0B),
@@ -530,3 +762,29 @@ const Map<String, _SectionVisual> _sectionVisuals = {
     color: Color(0xFF64748B),
   ),
 };
+
+class InventoryVehicleRecord {
+  final String id;
+  final String vehicleNumber;
+  final String ownerName;
+  final String brand;
+  final String model;
+  final String engineNumber;
+  final String chassisNumber;
+  final String drivenKm;
+  final String dateLabel;
+  final String status;
+
+  const InventoryVehicleRecord({
+    required this.id,
+    required this.vehicleNumber,
+    required this.ownerName,
+    required this.brand,
+    required this.model,
+    required this.engineNumber,
+    required this.chassisNumber,
+    required this.drivenKm,
+    required this.dateLabel,
+    required this.status,
+  });
+}
