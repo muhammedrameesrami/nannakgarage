@@ -123,7 +123,7 @@ class SalesReportContent extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        const Divider(),
+                        const Divider(color: ColorPalette.primaryColor,),
                         Expanded(
                           child: gateExitBookings.isEmpty
                               ? Center(

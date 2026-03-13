@@ -104,7 +104,7 @@ class BookingDetailScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            const Divider(),
+                            const Divider(color: ColorPalette.primaryColor,),
                             _buildTextRow(context, 'Service Type', booking.serviceType),
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -166,7 +166,7 @@ class BookingDetailScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const Divider(),
+            const Divider(color: ColorPalette.primaryColor,),
             ...rows.map((r) => _buildTextRow(context, r.key, r.value)),
           ],
         ),

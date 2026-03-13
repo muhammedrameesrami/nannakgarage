@@ -101,9 +101,9 @@ class AppLayout extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(color: ColorPalette.borderColor),
-                    ),
+                    // border: Border(
+                    //   bottom: BorderSide(color: ColorPalette.borderColor),
+                    // ),
                   ),
                   child: Row(
                     children: [
@@ -245,7 +245,7 @@ class AppLayout extends ConsumerWidget {
             ],
           ),
         ),
-        const Divider(indent: 20, endIndent: 20),
+        const Divider(indent: 20, endIndent: 20,),
         const SizedBox(height: 8),
         // Navigation Items
         Expanded(
