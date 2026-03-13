@@ -5,6 +5,10 @@ class VehicleModel {
   final String model;
   final String? year;
   final String kmDriven;
+  final String? chassisNumber;
+  final String? engineNumber;
+  final String? registrationDate;
+  final String? fuel;
 
   VehicleModel({
     required this.id,
@@ -13,6 +17,10 @@ class VehicleModel {
     required this.model,
     this.year,
     required this.kmDriven,
+    this.chassisNumber,
+    this.engineNumber,
+    this.registrationDate,
+    this.fuel,
   });
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +31,10 @@ class VehicleModel {
       model: json['model'],
       year: json['year'],
       kmDriven: json['kmDriven'],
+      chassisNumber: json['chassisNumber'],
+      engineNumber: json['engineNumber'],
+      registrationDate: json['registrationDate'],
+      fuel: json['fuel'],
     );
   }
 
@@ -34,8 +46,12 @@ class VehicleModel {
       'model': model,
       'year': year,
       'kmDriven': kmDriven,
+      'chassisNumber': chassisNumber,
+      'engineNumber': engineNumber,
+      'registrationDate': registrationDate,
+      'fuel': fuel,
     };
   }
-  
+
   String get displayName => '$brand $model';
 }

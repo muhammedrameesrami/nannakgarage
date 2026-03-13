@@ -4,6 +4,7 @@ import '../../core/theme/color_palette.dart';
 import '../bookings/bookings_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../layout/app_layout.dart';
+import '../reports/reports_content.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
@@ -80,7 +81,7 @@ class _MainScreenState extends State<MainScreen>
         children: [
           const DashboardOverviewContent(),
           BookingsContent(initialSection: widget.initialBookingSection),
-          const _ComingSoonPage(title: 'Reports'),
+          const ReportsContent(),
           const _ComingSoonPage(title: 'Settings'),
         ],
       ),

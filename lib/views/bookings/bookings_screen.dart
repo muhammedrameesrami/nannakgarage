@@ -13,6 +13,7 @@ import '../../controllers/dashboard_controller.dart';
 import '../../controllers/workflow_controller.dart';
 import '../layout/app_layout.dart';
 import '../workflow/workflow_screen.dart';
+import 'booking_detail_screen.dart';
 
 class BookingsScreen extends ConsumerWidget {
   final String? initialSection;
@@ -33,26 +34,7 @@ class BookingsContent extends ConsumerWidget {
 
   const BookingsContent({super.key, this.initialSection});
 
-  String? _stepForSection(String? section) {
-    switch (section) {
-      case DashboardController.gateEntry:
-        return AppConstants.statusGateEntry;
-      case DashboardController.jobCard:
-        return AppConstants.statusJobCard;
-      case DashboardController.estimation:
-        return AppConstants.statusEstimation;
-      case DashboardController.technician:
-        return AppConstants.statusService;
-      case DashboardController.qualityCheck:
-        return AppConstants.statusQualityCheck;
-      case DashboardController.billing:
-        return AppConstants.statusBilling;
-      case DashboardController.gateExit:
-        return AppConstants.statusBilling;
-      default:
-        return null;
-    }
-  }
+
 
   String _canonical(String value) {
     return value.toLowerCase().replaceAll(' ', '');
@@ -197,6 +179,17 @@ class BookingsContent extends ConsumerWidget {
                                       ),
                                     ),
                                   ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Text(
+                                      'Service Type',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: ColorPalette.textSecondary,
+                                        fontSize: context.sp(14),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -220,28 +213,13 @@ class BookingsContent extends ConsumerWidget {
                                         final booking = bookings[index];
                                         return InkWell(
                                           onTap: () {
-                                            final workflowNotifier = ref.read(
-                                              workflowControllerProvider
-                                                  .notifier,
-                                            );
-                                            workflowNotifier.openBooking(
-                                              booking,
-                                            );
-
-                                            final targetStep = _stepForSection(
-                                              selectedSection,
-                                            );
-                                            if (targetStep != null) {
-                                              workflowNotifier.setStep(
-                                                targetStep,
-                                              );
-                                            }
-
                                             Navigator.push(
                                               context,
                                               MaterialPageRoute(
                                                 builder: (context) =>
-                                                    const WorkflowScreen(),
+                                                    BookingDetailScreen(
+                                                      booking: booking,
+                                                    ),
                                               ),
                                             );
                                           },
@@ -289,6 +267,15 @@ class BookingsContent extends ConsumerWidget {
                                                         Alignment.centerLeft,
                                                     child: StatusBadge(
                                                       status: booking.status,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: Text(
+                                                    booking.serviceType,
+                                                    style: TextStyle(
+                                                      fontSize: context.sp(14),
                                                     ),
                                                   ),
                                                 ),

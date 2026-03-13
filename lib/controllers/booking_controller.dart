@@ -58,7 +58,7 @@ class BookingController extends Notifier<BookingState> {
           AppConstants.statusGateExit,
           AppConstants.statusCompleted,
         ];
-        
+
         // Ensure variety and specifically include Gate Exit items
         String status;
         if (index % 5 == 0) {
@@ -66,6 +66,15 @@ class BookingController extends Notifier<BookingState> {
         } else {
           status = statuses[index % statuses.length];
         }
+
+        final serviceTypes = [
+          'Full Service',
+          'Oil Change',
+          'Body Repair',
+          'Engine Tune-up',
+          'Brake Service',
+        ];
+        final fuels = ['Petrol', 'Diesel', 'Electric', 'Hybrid', 'CNG'];
 
         return BookingModel(
           id: id.toString(),
@@ -75,6 +84,7 @@ class BookingController extends Notifier<BookingState> {
             id: 'c$id',
             name: 'Customer $id',
             phone: '+1 234 567 89$index',
+            address: 'Location ${index + 1}',
           ),
           vehicle: VehicleModel(
             id: 'v$id',
@@ -82,8 +92,15 @@ class BookingController extends Notifier<BookingState> {
             brand: 'Toyota',
             model: 'Model $index',
             kmDriven: '${id * 1000}',
+            chassisNumber: 'CHS${id.toString().padLeft(6, '0')}',
+            engineNumber: 'ENG${id.toString().padLeft(6, '0')}',
+            registrationDate: '2024-0${(index % 9) + 1}-15',
+            fuel: fuels[index % fuels.length],
           ),
           status: status,
+          serviceType: serviceTypes[index % serviceTypes.length],
+          estimatedCost: (id * 500.0) + 1000,
+          finalCost: (id * 500.0) + 800,
         );
       });
 
@@ -99,4 +116,5 @@ class BookingController extends Notifier<BookingState> {
   }
 }
 
-final bookingControllerProvider = NotifierProvider<BookingController, BookingState>(BookingController.new);
+final bookingControllerProvider =
+    NotifierProvider<BookingController, BookingState>(BookingController.new);

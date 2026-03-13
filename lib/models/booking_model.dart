@@ -8,6 +8,7 @@ class BookingModel {
   final CustomerModel customer;
   final VehicleModel vehicle;
   final String status;
+  final String serviceType;
   final double? estimatedCost;
   final double? finalCost;
 
@@ -18,6 +19,7 @@ class BookingModel {
     required this.customer,
     required this.vehicle,
     required this.status,
+    required this.serviceType,
     this.estimatedCost,
     this.finalCost,
   });
@@ -30,6 +32,7 @@ class BookingModel {
       customer: CustomerModel.fromJson(json['customer']),
       vehicle: VehicleModel.fromJson(json['vehicle']),
       status: json['status'],
+      serviceType: json['serviceType'] ?? '',
       estimatedCost: json['estimatedCost']?.toDouble(),
       finalCost: json['finalCost']?.toDouble(),
     );
@@ -43,6 +46,7 @@ class BookingModel {
       'customer': customer.toJson(),
       'vehicle': vehicle.toJson(),
       'status': status,
+      'serviceType': serviceType,
       'estimatedCost': estimatedCost,
       'finalCost': finalCost,
     };
@@ -55,6 +59,7 @@ class BookingModel {
     CustomerModel? customer,
     VehicleModel? vehicle,
     String? status,
+    String? serviceType,
     double? estimatedCost,
     double? finalCost,
   }) {
@@ -65,6 +70,7 @@ class BookingModel {
       customer: customer ?? this.customer,
       vehicle: vehicle ?? this.vehicle,
       status: status ?? this.status,
+      serviceType: serviceType ?? this.serviceType,
       estimatedCost: estimatedCost ?? this.estimatedCost,
       finalCost: finalCost ?? this.finalCost,
     );

@@ -1,5 +1,9 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/theme/color_palette.dart';
 import '../../common/widgets/app_button.dart';
 import '../../common/widgets/app_textfield.dart';
@@ -19,7 +23,11 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
   final _customerPhoneController = TextEditingController();
   final _vehicleNumberController = TextEditingController();
   final _kmDrivenController = TextEditingController();
-  
+
+  File? _pickedImage;
+  Uint8List? _webImageBytes;
+  final ImagePicker _picker = ImagePicker();
+
   String? _selectedBrand;
   String? _selectedModel;
   String? _selectedBookingId;
@@ -35,10 +43,10 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
 
   void _onBookingSelected(String? bookingId) {
     if (bookingId == null) return;
-    
+
     final bookings = ref.read(bookingControllerProvider).bookings;
     final selectedBooking = bookings.firstWhere((b) => b.id == bookingId);
-    
+
     setState(() {
       _selectedBookingId = bookingId;
       _customerNameController.text = selectedBooking.customer.name;
@@ -48,6 +56,66 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
       _selectedBrand = selectedBooking.vehicle.brand;
       _selectedModel = selectedBooking.vehicle.model;
     });
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 1080,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        if (kIsWeb) {
+          final bytes = await image.readAsBytes();
+          if (!mounted) return;
+          setState(() {
+            _webImageBytes = bytes;
+            _pickedImage = null; // Clear file-based image if any
+          });
+        } else {
+          if (!mounted) return;
+          setState(() {
+            _pickedImage = File(image.path);
+            _webImageBytes = null; // Clear web-based image if any
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+    }
+  }
+
+  void _showImageSourceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Image Source'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -77,10 +145,12 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
           hint: 'Select to auto-populate',
           value: _selectedBookingId,
           items: bookingState.bookings
-              .map((b) => DropdownMenuItem(
-                    value: b.id,
-                    child: Text('${b.vehicle.number} - ${b.customer.name}'),
-                  ))
+              .map(
+                (b) => DropdownMenuItem(
+                  value: b.id,
+                  child: Text('${b.vehicle.number} - ${b.customer.name}'),
+                ),
+              )
               .toList(),
           onChanged: _onBookingSelected,
         ),
@@ -127,11 +197,24 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
                 label: 'Brand',
                 hint: 'Toyota',
                 value: _selectedBrand,
-                items: const [
-                  DropdownMenuItem(value: 'Toyota', child: Text('Toyota')),
-                  DropdownMenuItem(value: 'Honda', child: Text('Honda')),
-                  DropdownMenuItem(value: 'Nissan', child: Text('Nissan')),
-                ],
+                items:
+                    [
+                      'Toyota',
+                      'Honda',
+                      'Nissan',
+                      if (_selectedBrand != null &&
+                          ![
+                            'Toyota',
+                            'Honda',
+                            'Nissan',
+                          ].contains(_selectedBrand))
+                        _selectedBrand!,
+                    ].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
                 onChanged: (val) => setState(() => _selectedBrand = val),
               ),
             ),
@@ -141,11 +224,20 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
                 label: 'Model',
                 hint: 'RAV4',
                 value: _selectedModel,
-                items: const [
-                  DropdownMenuItem(value: 'RAV4', child: Text('RAV4')),
-                  DropdownMenuItem(value: 'CR-V', child: Text('CR-V')),
-                  DropdownMenuItem(value: 'Altima', child: Text('Altima')),
-                ],
+                items:
+                    [
+                      'RAV4',
+                      'CR-V',
+                      'Altima',
+                      if (_selectedModel != null &&
+                          !['RAV4', 'CR-V', 'Altima'].contains(_selectedModel))
+                        _selectedModel!,
+                    ].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
                 onChanged: (val) => setState(() => _selectedModel = val),
               ),
             ),
@@ -172,40 +264,99 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
           ],
         ),
         const SizedBox(height: 32),
-        Container(
-          height: 120,
-          width: 200,
-          decoration: BoxDecoration(
-            border: Border.all(color: ColorPalette.borderColor),
+        Center(
+          child: InkWell(
+            onTap: _showImageSourceDialog,
             borderRadius: BorderRadius.circular(8),
-            color: ColorPalette.backgroundColor,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.camera_alt_outlined,
-                size: 32,
-                color: ColorPalette.textSecondary,
+            child: Container(
+              height: 200,
+              width: 250,
+              decoration: BoxDecoration(
+                border: Border.all(color: ColorPalette.borderColor),
+                borderRadius: BorderRadius.circular(8),
+                color: ColorPalette.backgroundColor,
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Upload Number Plate',
-                style: TextStyle(color: ColorPalette.textSecondary),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Stack(
+                  children: [
+                    if (_pickedImage == null && _webImageBytes == null)
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.camera_alt_outlined,
+                              size: 32,
+                              color: ColorPalette.textSecondary,
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Upload Number Plate',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: ColorPalette.textSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (kIsWeb && _webImageBytes != null)
+                      Image.memory(
+                        _webImageBytes!,
+                        width: 250,
+                        height: 200,
+                        fit: BoxFit.fill,
+                      )
+                    else if (_pickedImage != null)
+                      Image.file(
+                        _pickedImage!,
+                        width: 250,
+                        height: 200,
+                        fit: BoxFit.fill,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
+                            child: Icon(Icons.error_outline, color: Colors.red),
+                          );
+                        },
+                      ),
+                    if (_pickedImage != null || _webImageBytes != null)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: InkWell(
+                          onTap: () => setState(() {
+                            _pickedImage = null;
+                            _webImageBytes = null;
+                          }),
+                          child: CircleAvatar(
+                            radius: 12,
+                            backgroundColor: Colors.black54,
+                            child: const Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
         ),
-     Center(
-       child: AppButton(
-                    text: 'Add Vehicle',
-                    icon: Icons.chevron_right,
-                    onPressed: () {
-                      // Validations and next
-                      notifier.nextStep();
-                    },
-                  ),
-     ),
+        Center(
+          child: AppButton(
+            text: 'Add Vehicle',
+            icon: Icons.chevron_right,
+            onPressed: () {
+              // Validations and next
+              notifier.nextStep();
+            },
+          ),
+        ),
       ],
     );
   }
