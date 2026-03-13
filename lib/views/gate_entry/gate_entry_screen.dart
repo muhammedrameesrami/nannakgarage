@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:camera/camera.dart';
+import '../../common/widgets/web_camera_dialog.dart';
 import '../../core/theme/color_palette.dart';
 import '../../common/widgets/app_button.dart';
 import '../../common/widgets/app_textfield.dart';
@@ -12,7 +14,9 @@ import '../../controllers/booking_controller.dart';
 import '../../controllers/workflow_controller.dart';
 
 class GateEntryScreen extends ConsumerStatefulWidget {
-  const GateEntryScreen({Key? key}) : super(key: key);
+  final VoidCallback? onSubmit;
+
+  const GateEntryScreen({super.key, this.onSubmit});
 
   @override
   ConsumerState<GateEntryScreen> createState() => _GateEntryScreenState();
@@ -60,6 +64,23 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
+      if (kIsWeb && source == ImageSource.camera) {
+        // Use custom camera dialog for Web
+        final Uint8List? imageBytes = await showDialog<Uint8List>(
+          context: context,
+          builder: (context) => const WebCameraDialog(),
+        );
+
+        if (imageBytes != null) {
+          if (!mounted) return;
+          setState(() {
+            _webImageBytes = imageBytes;
+            _pickedImage = null;
+          });
+        }
+        return;
+      }
+
       final XFile? image = await _picker.pickImage(
         source: source,
         maxWidth: 1080,
@@ -153,6 +174,90 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
               )
               .toList(),
           onChanged: _onBookingSelected,
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: InkWell(
+            onTap: _showImageSourceDialog,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              height: 200,
+              width: 250,
+              decoration: BoxDecoration(
+                border: Border.all(color: ColorPalette.borderColor),
+                borderRadius: BorderRadius.circular(8),
+                color: ColorPalette.backgroundColor,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Stack(
+                  children: [
+                    if (_pickedImage == null && _webImageBytes == null)
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.camera_alt_outlined,
+                              size: 32,
+                              color: ColorPalette.textSecondary,
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Upload Number Plate',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: ColorPalette.textSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (kIsWeb && _webImageBytes != null)
+                      Image.memory(
+                        _webImageBytes!,
+                        width: 250,
+                        height: 200,
+                        fit: BoxFit.fill,
+                      )
+                    else if (_pickedImage != null)
+                      Image.file(
+                        _pickedImage!,
+                        width: 250,
+                        height: 200,
+                        fit: BoxFit.fill,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
+                            child: Icon(Icons.error_outline, color: Colors.red),
+                          );
+                        },
+                      ),
+                    if (_pickedImage != null || _webImageBytes != null)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: InkWell(
+                          onTap: () => setState(() {
+                            _pickedImage = null;
+                            _webImageBytes = null;
+                          }),
+                          child: CircleAvatar(
+                            radius: 12,
+                            backgroundColor: Colors.black54,
+                            child: const Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 32),
         const Text(
@@ -264,96 +369,18 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
           ],
         ),
         const SizedBox(height: 32),
-        Center(
-          child: InkWell(
-            onTap: _showImageSourceDialog,
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              height: 200,
-              width: 250,
-              decoration: BoxDecoration(
-                border: Border.all(color: ColorPalette.borderColor),
-                borderRadius: BorderRadius.circular(8),
-                color: ColorPalette.backgroundColor,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Stack(
-                  children: [
-                    if (_pickedImage == null && _webImageBytes == null)
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.camera_alt_outlined,
-                              size: 32,
-                              color: ColorPalette.textSecondary,
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Upload Number Plate',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: ColorPalette.textSecondary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else if (kIsWeb && _webImageBytes != null)
-                      Image.memory(
-                        _webImageBytes!,
-                        width: 250,
-                        height: 200,
-                        fit: BoxFit.fill,
-                      )
-                    else if (_pickedImage != null)
-                      Image.file(
-                        _pickedImage!,
-                        width: 250,
-                        height: 200,
-                        fit: BoxFit.fill,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Center(
-                            child: Icon(Icons.error_outline, color: Colors.red),
-                          );
-                        },
-                      ),
-                    if (_pickedImage != null || _webImageBytes != null)
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: InkWell(
-                          onTap: () => setState(() {
-                            _pickedImage = null;
-                            _webImageBytes = null;
-                          }),
-                          child: CircleAvatar(
-                            radius: 12,
-                            backgroundColor: Colors.black54,
-                            child: const Icon(
-                              Icons.close,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+        const SizedBox(height: 24),
+        SizedBox(height: 24),
         Center(
           child: AppButton(
             text: 'Add Vehicle',
-            icon: Icons.chevron_right,
             onPressed: () {
               // Validations and next
-              notifier.nextStep();
+              if (widget.onSubmit != null) {
+                widget.onSubmit!();
+              } else {
+                notifier.nextStep();
+              }
             },
           ),
         ),

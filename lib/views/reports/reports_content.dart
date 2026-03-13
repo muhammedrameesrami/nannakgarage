@@ -3,17 +3,41 @@ import '../../core/theme/color_palette.dart';
 import '../../core/utils/responsive.dart';
 import 'sales_report_screen.dart';
 
-class ReportsContent extends StatelessWidget {
-  const ReportsContent({Key? key}) : super(key: key);
+class ReportsContent extends StatefulWidget {
+  const ReportsContent({super.key});
+
+  @override
+  State<ReportsContent> createState() => _ReportsContentState();
+}
+
+class _ReportsContentState extends State<ReportsContent> {
+  String? _selectedReport;
+
+  void _openReport(String reportKey) {
+    setState(() {
+      _selectedReport = reportKey;
+    });
+  }
+
+  void _showOverview() {
+    setState(() {
+      _selectedReport = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_selectedReport == 'sales') {
+      return SalesReportContent(onBack: _showOverview);
+    }
+
     final reports = [
       {
         'title': 'Sales Report',
         'subtitle': 'Gate exit vehicles and billing summary',
         'icon': Icons.point_of_sale_rounded,
         'color': ColorPalette.primaryColor,
+        'key': 'sales',
       },
     ];
 
@@ -36,16 +60,7 @@ class ReportsContent extends StatelessWidget {
             runSpacing: context.h(20),
             children: reports.map((report) {
               return InkWell(
-                onTap: () {
-                  if (report['title'] == 'Sales Report') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SalesReportScreen(),
-                      ),
-                    );
-                  }
-                },
+                onTap: () => _openReport(report['key']! as String),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   width: context.w(280),
@@ -60,7 +75,9 @@ class ReportsContent extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: (report['color'] as Color).withOpacity(0.1),
+                          color: (report['color'] as Color).withValues(
+                            alpha: 0.1,
+                          ),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(

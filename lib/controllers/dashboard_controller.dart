@@ -4,15 +4,9 @@ class DashboardState {
   final bool isLoading;
   final Map<String, int> sectionCounts;
 
-  const DashboardState({
-    this.isLoading = false,
-    this.sectionCounts = const {},
-  });
+  const DashboardState({this.isLoading = false, this.sectionCounts = const {}});
 
-  DashboardState copyWith({
-    bool? isLoading,
-    Map<String, int>? sectionCounts,
-  }) {
+  DashboardState copyWith({bool? isLoading, Map<String, int>? sectionCounts}) {
     return DashboardState(
       isLoading: isLoading ?? this.isLoading,
       sectionCounts: sectionCounts ?? this.sectionCounts,
@@ -22,6 +16,7 @@ class DashboardState {
 
 class DashboardController extends Notifier<DashboardState> {
   static const String gateEntry = 'Gate Entry';
+  static const String inventory = 'Inventory';
   static const String estimation = 'Estimation';
   static const String jobCard = 'Job Card';
   static const String technician = 'Technician';
@@ -31,6 +26,7 @@ class DashboardController extends Notifier<DashboardState> {
 
   static const List<String> workflowSections = [
     gateEntry,
+    inventory,
     estimation,
     jobCard,
     technician,
@@ -56,6 +52,7 @@ class DashboardController extends Notifier<DashboardState> {
       // Dummy data until backend integration is completed.
       final counts = <String, int>{
         gateEntry: 14,
+        inventory: 8,
         estimation: 9,
         jobCard: 11,
         technician: 7,
@@ -64,14 +61,14 @@ class DashboardController extends Notifier<DashboardState> {
         gateExit: 3,
       };
 
-      state = DashboardState(
-        isLoading: false,
-        sectionCounts: counts,
-      );
+      state = DashboardState(isLoading: false, sectionCounts: counts);
     } catch (e) {
       state = state.copyWith(isLoading: false);
     }
   }
 }
 
-final dashboardControllerProvider = NotifierProvider<DashboardController, DashboardState>(DashboardController.new);
+final dashboardControllerProvider =
+    NotifierProvider<DashboardController, DashboardState>(
+      DashboardController.new,
+    );

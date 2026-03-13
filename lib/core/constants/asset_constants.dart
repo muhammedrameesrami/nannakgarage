@@ -12,4 +12,5 @@ class AssetConstants {
   static const String qualityCheck = '$_imagesPath/qualityCheck.png';
   static const String billing = '$_imagesPath/billing.png';
   static const String gateExit = '$_imagesPath/gateExit.png';
+  static const String inventory = '$_imagesPath/inventory.png';
 }

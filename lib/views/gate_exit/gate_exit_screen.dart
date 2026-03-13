@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../common/widgets/web_camera_dialog.dart';
 import '../../core/theme/color_palette.dart';
 import '../../common/widgets/app_button.dart';
 import '../../controllers/workflow_controller.dart';
@@ -26,6 +27,27 @@ class _GateExitScreenState extends ConsumerState<GateExitScreen> {
 
   Future<void> _pickImage(bool isGatePass, ImageSource source) async {
     try {
+      if (kIsWeb && source == ImageSource.camera) {
+        final Uint8List? imageBytes = await showDialog<Uint8List>(
+          context: context,
+          builder: (context) => const WebCameraDialog(),
+        );
+
+        if (imageBytes != null) {
+          if (!mounted) return;
+          setState(() {
+            if (isGatePass) {
+              _passWebBytes = imageBytes;
+              _passImage = null;
+            } else {
+              _billWebBytes = imageBytes;
+              _billImage = null;
+            }
+          });
+        }
+        return;
+      }
+
       final XFile? image = await _picker.pickImage(
         source: source,
         maxWidth: 1080,
